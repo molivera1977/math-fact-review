@@ -59,7 +59,7 @@
             padding: 0 10px; 
         }
 
-        /* --- NEW WELCOME SCREEN CARDS --- */
+        /* --- WELCOME SCREEN CARDS --- */
         .mode-container {
             display: flex;
             justify-content: center;
@@ -104,7 +104,7 @@
         }
 
         .mode-card.mult .symbol-icon { color: var(--primary-color); }
-        .mode-card.div .symbol-icon { color: var(--orange-color); animation-delay: 1.5s; } /* Offset animation */
+        .mode-card.div .symbol-icon { color: var(--orange-color); animation-delay: 1.5s; }
 
         .mode-label {
             font-size: 1.2rem;
@@ -112,7 +112,7 @@
             color: #555;
         }
 
-        /* Standard Buttons */
+        /* Buttons */
         .btn {
             border: none;
             padding: 12px 25px;
@@ -271,12 +271,6 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
     </style>
 </head>
 <body>
@@ -362,6 +356,7 @@
         maxFactor: 0,
         answer: 0,
         score: { correct: 0, wrong: 0 },
+        processing: false, // NEW: Prevents double scoring
         timer: {
             active: false,
             seconds: 180, 
@@ -456,6 +451,7 @@
         state.maxFactor = max;
         state.score.correct = 0;
         state.score.wrong = 0;
+        state.processing = false; // Reset lock
         state.timer.active = ui.timerToggle.checked;
         state.timer.seconds = 180; 
 
@@ -494,6 +490,9 @@
 
     // --- Step 3: Game Logic ---
     function generateQuestion() {
+        // UNLOCK the system for the new question
+        state.processing = false;
+        
         ui.input.value = '';
         ui.input.focus();
         ui.feedback.innerText = '';
@@ -514,18 +513,24 @@
     }
 
     function checkAnswer() {
-        if (ui.input.disabled) return;
+        // Prevent interaction if we are already processing a correct answer
+        if (state.processing || ui.input.disabled) return;
 
         const val = parseInt(ui.input.value);
         if (isNaN(val)) return;
 
         if (val === state.answer) {
+            // LOCK the system immediately so subsequent Enter presses do nothing
+            state.processing = true;
+
             state.score.correct++;
             ui.scoreCorrect.innerText = state.score.correct;
             ui.feedback.innerText = "Correct!";
             ui.feedback.className = "feedback correct";
+            
             setTimeout(generateQuestion, 800);
         } else {
+            // Do NOT lock on incorrect answer, let them try again immediately
             state.score.wrong++;
             ui.scoreWrong.innerText = state.score.wrong;
             ui.feedback.innerText = "Try again!";
@@ -535,7 +540,10 @@
     }
 
     function handleEnter(e) {
-        if (e.key === "Enter") checkAnswer();
+        if (e.key === "Enter") {
+            e.preventDefault(); // Prevents default form actions
+            checkAnswer();
+        }
     }
 
     // --- Timer Logic ---
