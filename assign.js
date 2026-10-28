@@ -23,7 +23,10 @@
                 ONE row per name, so every assignment comes back. (A row named just '<student>' is an
                 assignment from before lists, 10/19; it is sorted by its score.)
      sessionId  'FA-<ms assigned>-<n>'   one per assignment, so each one is updated on its own
-     form       'facts-review · Mult · 6s · Get 20 right · Type It · Stop after 40 tries'
+     form       'facts-review · Mult · 6s · Get 20 right · Type It · Stop after 40 tries', or for 🔁 Second Chance
+                'facts-second · Mix · 7 × 8, 63 ÷ 9, 15 − 7 · Get 15 right · Type It · Stop after 30 tries'
+                (Marcos 10/27: "practice only the top 5, 8, or 10 most incorrect questions a particular student
+                gets" — the dashboard picks each student's own facts, any kinds mixed)
                 (kind · operation · set · goal · Type It | Choice | Either · try limit), or 'None' = taken away.
                 The kind is the key its site had (facts-review · facts-tens · facts-addsub), so rows from
                 before 10/27 read the same.
@@ -53,14 +56,30 @@ const ASSIGN_MAX_KEY = 1e15;
 const ASSIGN_SITES = {
     'facts-review': { title: 'Multiplication & Division', suffix: '',        ops: { Mult: 'multiplication', Div: 'division' } },
     'facts-tens':   { title: 'Multiples of 10',           suffix: ' (x10s)', ops: { Mult: 'multiplication', Div: 'division' } },
-    'facts-addsub': { title: 'Addition & Subtraction',    suffix: '',        ops: { Add: 'addition', Sub: 'subtraction' } }
+    'facts-addsub': { title: 'Addition & Subtraction',    suffix: '',        ops: { Add: 'addition', Sub: 'subtraction' } },
+    'facts-second': { title: 'Second Chance',             suffix: '',        ops: { Mix: 'mix' } }
 };
 const ASSIGN_OPS = {
     Mult: { word: 'Multiplication', sign: '×' },
     Div:  { word: 'Division',       sign: '÷' },
     Add:  { word: 'Addition',       sign: '+' },
-    Sub:  { word: 'Subtraction',    sign: '−' }
+    Sub:  { word: 'Subtraction',    sign: '−' },
+    Mix:  { word: 'Second Chance',  sign: '🔁' }
 };
+const ASSIGN_MAX_FACTS = 12;
+
+/* 🔁 A Second Chance list: '7 × 8, 63 ÷ 9, 15 − 7' → its facts, or [] if any one is not a true whole-number fact
+   (an unreadable list never locks a student out). */
+function assignFactList(set) {
+    const facts = String(set || '').split(',').map(f => f.trim());
+    const ok = f => {
+        const m = /^(\d+) ([+−×÷]) (\d+)$/.exec(f);
+        if (!m) return false;
+        const [a, b] = [Number(m[1]), Number(m[3])];
+        return m[2] === '÷' ? b > 0 && a % b === 0 : m[2] === '−' ? a >= b : true;
+    };
+    return facts.length <= ASSIGN_MAX_FACTS && facts.every(ok) ? [...new Set(facts)] : [];
+}
 const ASSIGN_STYLES = {
     'Type It': { style: 'type',   text: 'Type each answer.' },
     'Choice':  { style: 'choice', text: 'Pick from 4 answers.' },
@@ -179,19 +198,20 @@ function assignParse(row, student) {
     const [site, op, set, goal, how, stopAfter] = row.form.split('·').map(p => p.trim());
     const info = ASSIGN_SITES[site];
     if (!info || !info.ops[op] || !ASSIGN_STYLES[how]) return null;
+    const facts = site === 'facts-second' ? assignFactList(set) : null;   // 🔁 Second Chance: the student's own facts
     const one   = /^(\d+)s$/.exec(set || '');
     const range = /^(?:Mixed|All) (\d+)-(\d+)$/.exec(set || '');
     const want  = /^Get (\d+) right$/.exec(goal || '');
     const limit = /^Stop after (\d+) tries$/.exec(stopAfter || '');
-    if ((!one && !range) || !want || (stopAfter && !limit)) return null;
-    const min = Number(one ? one[1] : range[1]);
-    const max = Number(one ? one[1] : range[2]);
-    if (!(min >= 1 && min <= max && max <= 12) || !(Number(want[1]) >= 1)) return null;
+    if ((facts ? !facts.length : !one && !range) || !want || (stopAfter && !limit)) return null;
+    const min = facts ? 0 : Number(one ? one[1] : range[1]);
+    const max = facts ? 0 : Number(one ? one[1] : range[2]);
+    if ((!facts && !(min >= 1 && min <= max && max <= 12)) || !(Number(want[1]) >= 1)) return null;
     if (row.name !== student && !/^-?\d+$/.test(row.name.slice(student.length + 2))) return null;
     const key   = Number(row.score) || 0;
     const right = Number(row.correct) === key ? 0 : Math.max(0, Number(row.correct) || 0);
     return {
-        id: String(row.sessionId), rowName: row.name, form: row.form, key, site, op, set, min, max, how,
+        id: String(row.sessionId), rowName: row.name, form: row.form, key, site, op, set, min, max, how, facts,
         order:    row.name === student ? key : Number(row.name.slice(student.length + 2)),
         goal:     Number(want[1]),
         limit:    limit ? Number(limit[1]) : 0,   // 0 = no try limit
@@ -221,7 +241,8 @@ function assignMerge(fromSheet, saved) {
 
 const assignValid = a => !!(a && typeof a.id === 'string' && typeof a.rowName === 'string' && ASSIGN_SITES[a.site]
     && ASSIGN_SITES[a.site].ops[a.op] && ASSIGN_STYLES[a.how] && a.goal >= 1 && Number.isFinite(a.limit)
-    && Number.isFinite(a.order) && Number.isFinite(a.right) && Number.isFinite(a.answered) && Array.isArray(a.missed));
+    && Number.isFinite(a.order) && Number.isFinite(a.right) && Number.isFinite(a.answered) && Array.isArray(a.missed)
+    && (a.site !== 'facts-second' || (Array.isArray(a.facts) && a.facts.length > 0)));
 
 function assignSavedList(name) {
     try {
@@ -373,7 +394,9 @@ function assignRender(mode) {
     const a = assignment, info = ASSIGN_SITES[a.site], op = ASSIGN_OPS[a.op];
     const setSay = a.min === a.max ? `number ${a.min}` : a.set.replace('-', ' to ');
     assignLine($('.assign-eyebrow'), '📌 Assignment from Mr. O', 'Assignment from Mister O.');   // fewer words (Marcos 10/27: "seems cluttered")
-    assignLine($('.assign-what'), `${op.sign} ${op.word}: ${a.set}${info.suffix}`, `${op.word}. ${setSay}.`);
+    const facts = a.facts && `${a.facts.length} fact${a.facts.length === 1 ? '' : 's'}`;
+    if (a.facts) assignLine($('.assign-what'), `${op.sign} ${op.word}: ${facts}`, `Second chance. ${facts} you missed.`);
+    else assignLine($('.assign-what'), `${op.sign} ${op.word}: ${a.set}${info.suffix}`, `${op.word}. ${setSay}.`);
     assignLine($('.assign-goal'), `Get ${a.goal} right.`);
     assignLine($('.assign-how'), ASSIGN_STYLES[a.how].text);
     const pct = Math.min(100, Math.round((a.right / a.goal) * 100));
@@ -394,7 +417,13 @@ function assignStart() {
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     assignRun = { baseElapsed: a.elapsed };
     setKind(a.site);                                  // its kind of facts: its sheet tab, levels and questions
-    initSelection(ASSIGN_SITES[a.site].ops[a.op]);   // also turns the 3-minute timer off
+    if (a.facts) {                                    // 🔁 Second Chance: their own facts, no levels
+        state.mode = 'mix';
+        state.facts = a.facts;
+        ui.timerToggle.checked = false;
+    } else {
+        initSelection(ASSIGN_SITES[a.site].ops[a.op]);   // also turns the 3-minute timer off
+    }
     pickSet(a.min, a.max);
     const style = ASSIGN_STYLES[a.how].style;
     if (style !== 'either') chooseAnswerStyle(style);   // 'either': the student picks (no Back to Levels)

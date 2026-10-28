@@ -498,7 +498,7 @@
 </div>
 
 <script src="share.js?v=3"></script>
-<script src="assign.js?v=7"></script>
+<script src="assign.js?v=8"></script>
 <script>
     // --- The three kinds of facts ---
     // Marcos 10/27: one site "so my assignments arent split amongest different sites". Until then each
@@ -525,13 +525,23 @@
                 { mode: 'multiplication', short: 'Mult', word: 'Multiply', sign: '&times;10', example: 'e.g. 4 &times; 60',   review: 'Multiply by Multiples of 10' },
                 { mode: 'division',       short: 'Div',  word: 'Divide',   sign: '&divide;',  example: 'e.g. 240 &divide; 4', review: 'Divide Multiples of 10' }
             ]
+        },
+        // 🔁 Second Chance (Marcos 10/27: "practice only the top 5, 8, or 10 most incorrect questions a particular
+        // student gets"): only ever an assignment — each student's own facts, any kinds mixed (state.facts)
+        'facts-second': {
+            title: 'Second Chance', backTo: 'Second Chance', low: 1, mix: true,
+            ops: [{ mode: 'mix', short: 'Mix', word: 'Second Chance', sign: '🔁', review: 'Second Chance' }]
         }
     };
+    const FACT_RE = /^(\d+) ([+−×÷]) (\d+)$/;   // one fact as the page writes it: '7 × 8', '63 ÷ 9', '15 − 7', '4 × 60'
+    const factAnswer = (a, sign, b) => ({ '+': a + b, '−': a - b, '×': a * b, '÷': a / b })[sign];
+    const factCount  = n => `${n} fact${n === 1 ? '' : 's'}`;
 
     // --- State Management ---
     let state = {
         kind: 'facts-review',   // a key of KINDS
         mode: '',
+        facts: [],              // 🔁 Second Chance: the student's own facts ('7 × 8', …)
         minFactor: 0,
         maxFactor: 0,
         answer: 0,
@@ -593,6 +603,7 @@
     function setKind(key) {
         state.kind = key;
         const k = kind();
+        if (k.mix) return;   // 🔁 Second Chance: no screens of its own (assignments only)
         document.getElementById('ops-title').textContent = k.title;
         document.getElementById('ops-say').dataset.say = `${k.title.replace('&', 'and')}. Pick one: ${k.ops[0].word}, or ${k.ops[1].word}.`;
         const grid = document.getElementById('op-grid');
@@ -687,7 +698,8 @@
             rangeTitle = `Mixed ${min}-${max}`;
         }
 
-        ui.practiceTitle.innerText = `${modeTitle}: ${rangeTitle}` + (kind().tens ? ' (x10s)' : '');
+        ui.practiceTitle.innerText = kind().mix ? `🔁 Second Chance: ${factCount(state.facts.length)}`
+            : `${modeTitle}: ${rangeTitle}` + (kind().tens ? ' (x10s)' : '');
 
         showScreen('practice');
         generateQuestion();
@@ -718,7 +730,13 @@
         // Multiples of 10: the other number is 10, 20 … 120 (numA is the base number); otherwise 0 … 12
         const numB = kind().tens ? (Math.floor(Math.random() * 12) + 1) * 10 : Math.floor(Math.random() * 13);
 
-        if (state.mode === 'addition') {
+        if (state.mode === 'mix') {
+            // 🔁 Second Chance: one of the student's own facts — never the same one twice in a row
+            const pool = state.facts.length > 1 ? state.facts.filter(f => f !== state.problemText) : state.facts;
+            const [, a, sign, b] = FACT_RE.exec(pool[Math.floor(Math.random() * pool.length)]);
+            state.answer = factAnswer(Number(a), sign, Number(b));
+            ui.problem.textContent = `${a} ${sign} ${b} =`;
+        } else if (state.mode === 'addition') {
             state.answer = numA + numB;
             ui.problem.innerHTML = `${numA} + ${numB} =`;
         } else if (state.mode === 'subtraction') {
@@ -836,7 +854,9 @@
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         let label = "";
-        if (state.minFactor === state.maxFactor) {
+        if (kind().mix) {
+            label = factCount(state.facts.length);
+        } else if (state.minFactor === state.maxFactor) {
             label = `${state.minFactor}s`;
         } else if (state.minFactor === kind().low && state.maxFactor === 12) {
             label = `All (${kind().low}-12)`;
@@ -1071,7 +1091,8 @@
         const op = opOf(state.mode).short;
         const low = kind().low;
         let set;
-        if (state.minFactor === state.maxFactor) set = `${state.minFactor}s`;
+        if (kind().mix) set = factCount(state.facts.length);   // 🔁 'Mix · 5 facts · Assigned'
+        else if (state.minFactor === state.maxFactor) set = `${state.minFactor}s`;
         else if (state.minFactor === low && state.maxFactor === 12) set = `All ${low}-12`;
         else set = `Mixed ${state.minFactor}-${state.maxFactor}`;
         return `${op} · ${set}` + (state.timer.active ? ' · Timed' : '') + (state.answerStyle === 'choice' ? ' · Choice' : '') + (assignRun ? ' · Assigned' : '');
@@ -1100,15 +1121,20 @@
     function buildChoices() {
         const ans = state.answer;
         const nums = state.problemText.match(/\d+/g).map(Number);
-        const tens = kind().tens;
+        // 🔁 Second Chance mixes kinds: the fact's own sign says which, and a 10, 20 … 120 in it says Multiples of 10
+        const mode = state.mode !== 'mix' ? state.mode
+            : { '+': 'addition', '−': 'subtraction', '×': 'multiplication', '÷': 'division' }[state.problemText.match(/[+−×÷]/)[0]];
+        const tens = state.mode !== 'mix' ? kind().tens
+            : mode === 'multiplication' ? nums[1] >= 10 && nums[1] % 10 === 0
+            : mode === 'division' && ans >= 10 && ans % 10 === 0;
         let steps;
-        if (state.mode === 'multiplication') {
+        if (mode === 'multiplication') {
             const [a, b] = nums;
             steps = tens ? [a * 10, b, 10] : [a, b, 1];
-        } else if (state.mode === 'division') {
+        } else if (mode === 'division') {
             steps = tens ? [10, 20, 30] : [1, 2, 3];
         } else {
-            steps = state.mode === 'addition' ? [1, 2, 10] : [1, 2, 3];
+            steps = mode === 'addition' ? [1, 2, 10] : [1, 2, 3];
         }
         const pool = [];
         steps.forEach(s => { pool.push(ans + s, ans - s); });
@@ -1152,6 +1178,7 @@
             form: describeSet(),
             started,
             missed: [],
+            tally: {},                                 // every fact answered: { '7 × 8': [right, wrong] }
             answered: 0,
             sent: false,
             activeMs: 0,                               // time on the page only
@@ -1182,6 +1209,8 @@
     function factsRecordAnswer(isCorrect, typed) {
         if (!session) return;
         session.answered++;
+        const [r, w] = session.tally[state.problemText] || [0, 0];
+        session.tally = { ...session.tally, [state.problemText]: isCorrect ? [r + 1, w] : [r, w + 1] };
         if (!isCorrect) {
             const entry = `${state.problemText} (${typed})`;
             if (!session.missed.includes(entry)) session.missed.push(entry);
@@ -1212,7 +1241,10 @@
                 done:           done,
                 elapsed:        factsActiveSeconds(),
                 tabSwitches:    0,
-                wrongQuestions: session.missed.join(' | ')
+                wrongQuestions: session.missed.join(' | '),
+                // every fact answered, right and wrong (Marcos 10/27: "yes, track the right ones too") — the sheet's
+                // events column; the dashboard's 🔁 Second Chance drops a fact a student has since gotten right
+                events:         JSON.stringify({ v: 1, facts: session.tally })
             })
         }).catch(() => {});
     }
