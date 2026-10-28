@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mr. O's Math Fact Review: Multiplication &amp; Division</title>
+    <title>Mr. O's Math Fact Review</title>
     <style>
         :root {
             --primary-color: #4a90e2;
@@ -86,11 +86,31 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
 
-        .mode-card.mult { border-color: var(--primary-color); }
-        .mode-card.mult:hover { background-color: #f0f7ff; }
-        
-        .mode-card.div { border-color: var(--orange-color); }
-        .mode-card.div:hover { background-color: #fff8f0; }
+        .mode-card.op-a { border-color: var(--primary-color); }
+        .mode-card.op-a:hover { background-color: #f0f7ff; }
+
+        .mode-card.op-b { border-color: var(--orange-color); }
+        .mode-card.op-b:hover { background-color: #fff8f0; }
+
+        /* The three kinds of facts (one site since 10/27) */
+        .kind-card { width: 180px; }
+        .kind-card .symbol-icon { font-size: 3.6rem; white-space: nowrap; }
+        .kind-card.addsub { border-color: var(--teal-color); }
+        .kind-card.addsub:hover { background-color: #effbf8; }
+        .kind-card.addsub .symbol-icon { color: var(--teal-color); }
+        .kind-card.md { border-color: var(--primary-color); }
+        .kind-card.md:hover { background-color: #f0f7ff; }
+        .kind-card.md .symbol-icon { color: var(--primary-color); animation-delay: 1s; }
+        .kind-card.tens { border-color: var(--purple-color); }
+        .kind-card.tens:hover { background-color: #f7f0fb; }
+        .kind-card.tens .symbol-icon { color: var(--purple-color); animation-delay: 2s; }
+        .symbol-subtext { font-size: 0.9rem; color: #888; font-weight: normal; }
+        #op-grid.tens .symbol-icon { font-size: 4rem; white-space: nowrap; }   /* "×10" fits its card (the old tens site's size) */
+
+        /* 🔊 on the left of a direction: reads it aloud when tapped (nothing speaks on its own) */
+        .pick-prompt { font-size: 1.2rem; color: #666; }
+        .say { cursor: pointer; margin-right: 6px; user-select: none; opacity: 0.85; }
+        .say:hover, .say:focus { opacity: 1; outline: none; }
 
         .symbol-icon {
             font-size: 5rem;
@@ -101,8 +121,8 @@
             animation: float 3s ease-in-out infinite;
         }
 
-        .mode-card.mult .symbol-icon { color: var(--primary-color); }
-        .mode-card.div .symbol-icon { color: var(--orange-color); animation-delay: 1.5s; }
+        .mode-card.op-a .symbol-icon { color: var(--primary-color); }
+        .mode-card.op-b .symbol-icon { color: var(--orange-color); animation-delay: 1.5s; }
 
         .mode-label {
             font-size: 1.2rem;
@@ -156,7 +176,7 @@
             flex-grow: 0;
         }
         .num-btn:hover { opacity: 0.9; transform: translateY(-2px); }
-        .num-btn.div-mode { background-color: var(--orange-color); }
+        .num-btn.op-b-mode { background-color: var(--orange-color); }
         
         .mixed-btn {
             background-color: var(--purple-color);
@@ -217,7 +237,7 @@
         #user-answer {
             font-size: 2.5rem;
             padding: 10px;
-            width: 150px;
+            width: 180px;   /* room for a Multiples of 10 answer like 1440 */
             text-align: center;
             border: 3px solid #ddd;
             border-radius: 15px;
@@ -298,10 +318,19 @@
         .hidden { display: none !important; }
         
         @media (max-width: 600px) {
+            /* Phones (Marcos 10/27: "this looks uneven"): the cards were wider than the box and hung off its right
+               edge. Now one even column in the middle: the symbol in a fixed spot on the left, the name (and its
+               small line) starting at the same place on every card. */
+            body { padding: 12px; }
+            .container { padding: 1.6rem 1.1rem; }
             .mixed-grid { grid-template-columns: repeat(2, 1fr); }
-            .mode-container { flex-direction: column; align-items: center; }
-            .mode-card { width: 100%; max-width: 250px; flex-direction: row; gap: 20px; height: 80px;}
-            .symbol-icon { font-size: 3rem; margin-bottom: 0; }
+            .mode-container { flex-direction: column; align-items: center; gap: 14px; }
+            .mode-card { box-sizing: border-box; width: 100%; max-width: 340px; height: auto; min-height: 84px; padding: 12px 16px;
+                display: grid; grid-template-columns: 96px 1fr; column-gap: 12px; align-items: center; align-content: center; text-align: left; }
+            .mode-card > * { grid-column: 2; }
+            .mode-card .symbol-icon { grid-column: 1; grid-row: 1 / span 2; justify-self: center; font-size: 3rem; margin-bottom: 0; }
+            .mode-card .mode-label:last-child { grid-row: 1 / span 2; }   /* no small line under it: the name in the middle */
+            .kind-card .symbol-icon, #op-grid.tens .symbol-icon { font-size: 2.4rem; white-space: nowrap; }
         }
         
         @keyframes float {
@@ -318,7 +347,6 @@
 
 <div class="container">
     <h1 id="main-title">Mr. O's Math Fact Review</h1>
-    <h2 style="font-size: 1.1rem; color: #4a90e2;">Multiplication &amp; Division Edition</h2>
 
     <!-- Teacher preview (Marcos 10/19: "every site should have teacher access"): only after the Teacher PIN -->
     <div id="teacher-banner" class="hidden" style="background:#fff3cd;border:2px solid #ffc107;border-radius:10px;padding:7px 14px;margin:0 auto 12px;max-width:640px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:0.9rem;font-weight:bold;color:#856404;">
@@ -328,17 +356,19 @@
 
     <div id="login-screen">
         <div class="mode-container login-art">
-            <div class="mode-card mult" onclick="signInFirst()">
-                <div class="symbol-icon">&times;</div>
-                <div class="mode-label">Multiplication</div>
+            <div class="mode-card kind-card addsub" onclick="signInFirst()">
+                <div class="symbol-icon">+ &minus;</div>
+                <div class="mode-label">Add &amp; Subtract</div>
             </div>
-
-            <div class="mode-card div" onclick="signInFirst()">
-                <div class="symbol-icon">&divide;</div>
-                <div class="mode-label">Division</div>
+            <div class="mode-card kind-card md" onclick="signInFirst()">
+                <div class="symbol-icon">&times; &divide;</div>
+                <div class="mode-label">Multiply &amp; Divide</div>
+            </div>
+            <div class="mode-card kind-card tens" onclick="signInFirst()">
+                <div class="symbol-icon">&times;10</div>
+                <div class="mode-label">Multiples of 10</div>
             </div>
         </div>
-        <p style="font-size: 1.2rem; color: #666;">Sign in so Mr. O can see your progress!</p>
         <div class="login-box">
             <label for="name-select">👤 Select your name:</label>
             <select id="name-select" onchange="onNameSelect()">
@@ -364,24 +394,29 @@
 
     <div id="welcome-screen" class="hidden">
         <div class="student-bar">
-            <span>👋 Hi, <strong id="student-name-display"></strong>! <span id="saved-note">Your practice is saved for Mr. O.</span></span>
+            <span>👋 Hi, <strong id="student-name-display"></strong>!</span>
             <button class="btn-switch" onclick="signOut()">Not you?</button>
         </div>
-        <p style="font-size: 1.2rem; color: #666;">Select a mode to begin:</p>
-        
-        <div class="mode-container">
-            <div class="mode-card mult" onclick="initSelection('multiplication')">
-                <div class="symbol-icon">&times;</div>
-                <div class="mode-label">Multiplication</div>
-            </div>
+        <!-- One site since 10/27 (Marcos: "so my assignments arent split amongest different sites") -->
+        <p class="pick-prompt"><span class="say" role="button" tabindex="0" aria-label="Listen"
+            data-say="Pick one. Add and subtract. Multiply and divide. Or multiples of 10.">🔊</span>Pick one:</p>
 
-            <div class="mode-card div" onclick="initSelection('division')">
-                <div class="symbol-icon">&divide;</div>
-                <div class="mode-label">Division</div>
+        <div class="mode-container" id="kind-grid">
+            <div class="mode-card kind-card addsub" onclick="chooseKind('facts-addsub')">
+                <div class="symbol-icon">+ &minus;</div>
+                <div class="mode-label">Add &amp; Subtract</div>
+            </div>
+            <div class="mode-card kind-card md" onclick="chooseKind('facts-review')">
+                <div class="symbol-icon">&times; &divide;</div>
+                <div class="mode-label">Multiply &amp; Divide</div>
+            </div>
+            <div class="mode-card kind-card tens" onclick="chooseKind('facts-tens')">
+                <div class="symbol-icon">&times;10</div>
+                <div class="mode-label">Multiples of 10</div>
             </div>
         </div>
 
-        <div class="history-container" id="history-section">
+        <div class="history-container hidden" id="history-section">
             <h3 style="text-align: center; margin-bottom: 10px; color: #888;">Today's Progress</h3>
             <div id="history-list">
                 <p style="text-align: center; color: #bbb; font-style: italic;">No practice yet today.</p>
@@ -389,26 +424,34 @@
         </div>
     </div>
 
+    <!-- One kind of facts: its two operations (built by chooseKind) -->
+    <div id="ops-screen" class="hidden">
+        <h2 id="ops-title"></h2>
+        <p class="pick-prompt"><span class="say" id="ops-say" role="button" tabindex="0" aria-label="Listen">🔊</span>Pick one:</p>
+        <div class="mode-container" id="op-grid"></div>
+        <button class="btn btn-nav" onclick="goHome()">⬅️ Back to All Math Facts<span class="btn-sub">Pick a different kind. You stay signed in.</span></button>
+    </div>
+
     <div id="selection-screen" class="hidden">
         <h2 id="selection-title">Select Level</h2>
-        
+
         <div class="options-panel">
             <label class="toggle-label">
                 <input type="checkbox" id="timer-toggle"> 
-                Enable 3-Minute Timer
+                ⏱️ 3-Minute Timer
             </label>
         </div>
 
-        <h3 class="section-header"><span>Mixed Reviews</span></h3>
+        <h3 class="section-header"><span>Mixed</span></h3>
         <div class="mixed-grid" id="mixed-grid">
             </div>
 
-        <h3 class="section-header"><span>Individual Numbers</span></h3>
+        <h3 class="section-header"><span>One Number</span></h3>
         <div class="number-grid" id="number-grid">
             </div>
-        
+
         <br>
-        <button class="btn btn-nav" onclick="goHome()">⬅️ Back to Multiplication or Division<span class="btn-sub">Pick a different one. You stay signed in.</span></button>
+        <button class="btn btn-nav" id="sel-back" onclick="showScreen('ops')">⬅️ Back<span class="btn-sub">Pick a different one. You stay signed in.</span></button>
     </div>
 
     <div id="style-screen" class="hidden">
@@ -450,16 +493,45 @@
         
         <button id="finish-btn" class="btn btn-nav" onclick="endSession()">🏁 Finish Review<span class="btn-sub">See your score. Your practice is saved.</span></button>
         
-        <button id="home-btn" class="btn btn-home-large hidden" onclick="goHome()">📋 Back to Multiplication or Division<span class="btn-sub">Practice something else. You stay signed in.</span></button>
+        <button id="home-btn" class="btn btn-home-large hidden" onclick="goHome()">📋 Back to All Math Facts<span class="btn-sub">Practice something else. You stay signed in.</span></button>
     </div>
 </div>
 
 <script src="share.js?v=3"></script>
-<script src="assign.js?v=4"></script>
+<script src="assign.js?v=7"></script>
 <script>
+    // --- The three kinds of facts ---
+    // Marcos 10/27: one site "so my assignments arent split amongest different sites". Until then each
+    // kind was its own site; each kind still saves to the sheet tab its site used (the key), so the
+    // Teacher Dashboard and every score saved before read the same.
+    const KINDS = {
+        'facts-addsub': {
+            title: 'Add & Subtract', backTo: 'Addition or Subtraction', low: 1,
+            ops: [
+                { mode: 'addition',    short: 'Add', word: 'Addition',    sign: '+',       review: 'Addition Review' },
+                { mode: 'subtraction', short: 'Sub', word: 'Subtraction', sign: '&minus;', review: 'Subtraction Review' }
+            ]
+        },
+        'facts-review': {
+            title: 'Multiply & Divide', backTo: 'Multiplication or Division', low: 2,
+            ops: [
+                { mode: 'multiplication', short: 'Mult', word: 'Multiplication', sign: '&times;',  review: 'Multiplication Review' },
+                { mode: 'division',       short: 'Div',  word: 'Division',       sign: '&divide;', review: 'Division Review' }
+            ]
+        },
+        'facts-tens': {
+            title: 'Multiples of 10', backTo: 'Multiply or Divide', low: 2, tens: true,
+            ops: [
+                { mode: 'multiplication', short: 'Mult', word: 'Multiply', sign: '&times;10', example: 'e.g. 4 &times; 60',   review: 'Multiply by Multiples of 10' },
+                { mode: 'division',       short: 'Div',  word: 'Divide',   sign: '&divide;',  example: 'e.g. 240 &divide; 4', review: 'Divide Multiples of 10' }
+            ]
+        }
+    };
+
     // --- State Management ---
     let state = {
-        mode: '',         
+        kind: 'facts-review',   // a key of KINDS
+        mode: '',
         minFactor: 0,
         maxFactor: 0,
         answer: 0,
@@ -477,6 +549,7 @@
     const screens = {
         login: document.getElementById('login-screen'),
         welcome: document.getElementById('welcome-screen'),
+        ops: document.getElementById('ops-screen'),
         selection: document.getElementById('selection-screen'),
         style: document.getElementById('style-screen'),
         practice: document.getElementById('practice-screen'),
@@ -513,24 +586,51 @@
         showScreen('welcome');
     }
 
-    // --- Step 1: Mode Selection ---
+    const kind = () => KINDS[state.kind];
+    const opOf = mode => kind().ops.find(op => op.mode === mode);
+
+    // --- Step 1: Kind of facts (the welcome screen's three cards), then its two operations ---
+    function setKind(key) {
+        state.kind = key;
+        const k = kind();
+        document.getElementById('ops-title').textContent = k.title;
+        document.getElementById('ops-say').dataset.say = `${k.title.replace('&', 'and')}. Pick one: ${k.ops[0].word}, or ${k.ops[1].word}.`;
+        const grid = document.getElementById('op-grid');
+        grid.innerHTML = '';
+        grid.classList.toggle('tens', !!k.tens);
+        k.ops.forEach((op, i) => {
+            const card = document.createElement('div');
+            card.className = `mode-card ${i ? 'op-b' : 'op-a'}`;
+            card.onclick = () => initSelection(op.mode);
+            card.innerHTML = `<div class="symbol-icon">${op.sign}</div><div class="mode-label">${op.word}</div>`
+                + (op.example ? `<div class="symbol-subtext">${op.example}</div>` : '');
+            grid.appendChild(card);
+        });
+        document.getElementById('sel-back').innerHTML = `⬅️ Back to ${k.backTo}<span class="btn-sub">Pick a different one. You stay signed in.</span>`;
+    }
+
+    function chooseKind(key) {
+        setKind(key);
+        showScreen('ops');
+    }
+
+    // --- Step 2: Mode Selection ---
     function initSelection(mode) {
         state.mode = mode;
-        ui.title.innerText = mode === 'multiplication' 
-            ? "Multiplication Review" 
-            : "Division Review";
-        
+        ui.title.innerText = opOf(mode).review;
+
         // Reset Grids
         ui.mixedGrid.innerHTML = '';
         ui.numGrid.innerHTML = '';
-        
-        // 1. Create Mixed Buttons
+
+        // 1. Create Mixed Buttons (Addition & Subtraction start at 1, the others at 2)
+        const low = kind().low;
         const ranges = [
-            { label: "Mixed 2-4", min: 2, max: 4 },
-            { label: "Mixed 5-7", min: 5, max: 7 },
-            { label: "Mixed 8-10", min: 8, max: 10 },
-            { label: "Mixed 11-12", min: 11, max: 12 },
-            { label: "Mixed All (2-12)", min: 2, max: 12, isAll: true }
+            { label: `${low}-4`, min: low, max: 4 },          // under the "Mixed" heading, so no "Mixed" on each
+            { label: "5-7", min: 5, max: 7 },
+            { label: "8-10", min: 8, max: 10 },
+            { label: "11-12", min: 11, max: 12 },
+            { label: `All ${low}-12`, min: low, max: 12, isAll: true }
         ];
 
         ranges.forEach(range => {
@@ -543,12 +643,12 @@
             ui.mixedGrid.appendChild(btn);
         });
 
-        // 2. Create Single Number Buttons (2-12)
-        for (let i = 2; i <= 12; i++) {
+        // 2. Create Single Number Buttons (low-12)
+        for (let i = low; i <= 12; i++) {
             const btn = document.createElement('button');
             btn.innerText = i;
             btn.className = 'num-btn';
-            if (mode === 'division') btn.classList.add('div-mode');
+            if (mode === kind().ops[1].mode) btn.classList.add('op-b-mode');
             btn.onclick = () => pickSet(i, i);
             ui.numGrid.appendChild(btn);
         }
@@ -557,7 +657,7 @@
         showScreen('selection');
     }
 
-    // --- Step 2: Start Session ---
+    // --- Step 3: Start Session ---
     function startPractice(min, max) {
         state.minFactor = min;
         state.maxFactor = max;
@@ -581,13 +681,13 @@
         let rangeTitle = "";
         if (min === max) {
             rangeTitle = `${min}s`;
-        } else if (min === 2 && max === 12) {
+        } else if (min === kind().low && max === 12) {
             rangeTitle = "Mixed All";
         } else {
             rangeTitle = `Mixed ${min}-${max}`;
         }
 
-        ui.practiceTitle.innerText = `${modeTitle}: ${rangeTitle}`;
+        ui.practiceTitle.innerText = `${modeTitle}: ${rangeTitle}` + (kind().tens ? ' (x10s)' : '');
 
         showScreen('practice');
         generateQuestion();
@@ -602,11 +702,11 @@
         assignPracticeStarted();   // an assignment: no Finish button, its count where the timer goes
     }
 
-    // --- Step 3: Game Logic ---
+    // --- Step 4: Game Logic ---
     function generateQuestion() {
         // UNLOCK processing
         state.processing = false;
-        
+
         ui.input.value = '';
         ui.input.classList.remove('show-answer');
         ui.input.focus();
@@ -615,9 +715,18 @@
 
         const range = state.maxFactor - state.minFactor + 1;
         const numA = Math.floor(Math.random() * range) + state.minFactor;
-        const numB = Math.floor(Math.random() * 13); 
+        // Multiples of 10: the other number is 10, 20 … 120 (numA is the base number); otherwise 0 … 12
+        const numB = kind().tens ? (Math.floor(Math.random() * 12) + 1) * 10 : Math.floor(Math.random() * 13);
 
-        if (state.mode === 'multiplication') {
+        if (state.mode === 'addition') {
+            state.answer = numA + numB;
+            ui.problem.innerHTML = `${numA} + ${numB} =`;
+        } else if (state.mode === 'subtraction') {
+            // Subtraction is the inverse fact: (a + b) − a = b
+            const total = numA + numB;
+            state.answer = numB;
+            ui.problem.innerHTML = `${total} &minus; ${numA} =`;
+        } else if (state.mode === 'multiplication') {
             state.answer = numA * numB;
             ui.problem.innerHTML = `${numA} &times; ${numB} =`;
         } else {
@@ -729,15 +838,15 @@
         let label = "";
         if (state.minFactor === state.maxFactor) {
             label = `${state.minFactor}s`;
-        } else if (state.minFactor === 2 && state.maxFactor === 12) {
-            label = "All (2-12)";
+        } else if (state.minFactor === kind().low && state.maxFactor === 12) {
+            label = `All (${kind().low}-12)`;
         } else {
             label = `Mix ${state.minFactor}-${state.maxFactor}`;
         }
 
         const entry = {
             time: timeString,
-            mode: state.mode === 'multiplication' ? 'Mult' : 'Div',
+            mode: opOf(state.mode).short + (kind().tens ? ' (x10)' : ''),
             label: label,
             correct: state.score.correct,
             wrong: state.score.wrong,
@@ -748,6 +857,7 @@
     }
 
     function renderHistory() {
+        document.getElementById('history-section').classList.toggle('hidden', state.history.length === 0);   // nothing to show yet: no section
         if (state.history.length === 0) return;
 
         let html = `
@@ -788,8 +898,9 @@
     //  shows up in the Teacher Dashboard → 🧮 Fact Fluency.
     // ═══════════════════════════════════════════════════
     const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzv8CWv1yyi8NeH04now9UxVL4IZm5yMqqsEGMcgGdrcAOWVB-aSp5siTvSSJXIUpzFMA/exec';
-    const GAME_KEY  = 'facts-review';
+    // Each practice row goes to its kind's tab (state.kind: facts-addsub · facts-review · facts-tens)
     const LOGIN_KEY = 'facts_student_v1';
+    const READ_RATE = 0.82;   // every read aloud on the class sites (Marcos 10/26)
     const PARTIAL_EVERY = 5; // save an in-progress row every 5 answers
 
     // ⚠️ ROSTER SYNC — keep identical to the Teacher Dashboard ROSTER
@@ -908,21 +1019,38 @@
         studentName = name;
         if (!teacherPreview) { try { sessionStorage.setItem(LOGIN_KEY, name); } catch (e) {} }
         document.getElementById('teacher-banner').classList.toggle('hidden', !teacherPreview);
-        const savedNote = document.getElementById('saved-note');   // share.js replaces it in a guest view
-        if (savedNote) savedNote.textContent = teacherPreview ? 'Teacher preview: nothing is saved.' : 'Your practice is saved for Mr. O.';
         document.getElementById('student-name-display').textContent = name.includes(',')
             ? name.split(',')[1].trim() + ' ' + name.split(',')[0].trim()
             : name;
         state.history = [];
         ui.historyList.innerHTML = '<p style="text-align: center; color: #bbb; font-style: italic;">No practice yet today.</p>';
+        document.getElementById('history-section').classList.add('hidden');   // shows after their first practice
         assignCheck(name);   // an assignment from Mr. O shows first (assign.js)
     }
 
     function signInFirst() {
         const sel = document.getElementById('name-select');
         sel.focus();
-        document.getElementById('login-error').textContent = '👆 Sign in first, then pick a mode!';
+        document.getElementById('login-error').textContent = '👆 Sign in first, then pick what to practice!';
     }
+
+    // A 🔊 reads its direction when tapped (nothing speaks on its own)
+    function sayText(text) {
+        if (!text || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = READ_RATE;
+        speechSynthesis.speak(u);
+    }
+    document.addEventListener('click', e => {
+        const spk = e.target.closest('.say');
+        if (spk) sayText(spk.dataset.say);
+    });
+    document.addEventListener('keydown', e => {
+        const spk = e.target.closest('.say');
+        if (spk && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); sayText(spk.dataset.say); }
+    });
 
     function signOut() {
         assignReset();
@@ -938,11 +1066,13 @@
     }
 
     // ── Session tracking (called from the practice logic) ──
+    // The row's form, as each site wrote it before 10/27: 'Mult · 6s', 'Add · All 1-12', 'Div · Mixed 5-7 · Choice'
     function describeSet() {
-        const op = state.mode === 'multiplication' ? 'Mult' : 'Div';
+        const op = opOf(state.mode).short;
+        const low = kind().low;
         let set;
         if (state.minFactor === state.maxFactor) set = `${state.minFactor}s`;
-        else if (state.minFactor === 2 && state.maxFactor === 12) set = 'All 2-12';
+        else if (state.minFactor === low && state.maxFactor === 12) set = `All ${low}-12`;
         else set = `Mixed ${state.minFactor}-${state.maxFactor}`;
         return `${op} · ${set}` + (state.timer.active ? ' · Timed' : '') + (state.answerStyle === 'choice' ? ' · Choice' : '') + (assignRun ? ' · Assigned' : '');
     }
@@ -966,17 +1096,19 @@
     }
 
     // Wrong options are near-misses a student might really pick
-    // (neighboring facts and off-by-one), never random numbers.
+    // (neighboring facts, off-by-one, and a tens slip when adding), never random numbers.
     function buildChoices() {
         const ans = state.answer;
         const nums = state.problemText.match(/\d+/g).map(Number);
-        const tens = GAME_KEY === 'facts-tens';
+        const tens = kind().tens;
         let steps;
         if (state.mode === 'multiplication') {
             const [a, b] = nums;
             steps = tens ? [a * 10, b, 10] : [a, b, 1];
-        } else {
+        } else if (state.mode === 'division') {
             steps = tens ? [10, 20, 30] : [1, 2, 3];
+        } else {
+            steps = state.mode === 'addition' ? [1, 2, 10] : [1, 2, 3];
         }
         const pool = [];
         steps.forEach(s => { pool.push(ans + s, ans - s); });
@@ -1016,6 +1148,7 @@
         const started = Date.now();
         session = {
             id: `F-${started}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+            game: state.kind,                          // the kind's sheet tab
             form: describeSet(),
             started,
             missed: [],
@@ -1068,7 +1201,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action:         'submit',
-                game:           GAME_KEY,
+                game:           session.game,
                 sessionId:      session.id,
                 name:           studentName,
                 form:           session.form,

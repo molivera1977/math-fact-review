@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   📌 ASSIGNED PRACTICE — the same file in all three Math Fact Review folders. Change all three together.
+   📌 ASSIGNED PRACTICE — Mr. O's Math Fact Review.
+   ONE SITE since 10/27 (Marcos: "so my assignments arent split amongest different sites"): + −, × ÷ and
+   Multiples of 10 were three sites, each with a copy of this file; an assignment for another kind sent the
+   student to that site. Now every assignment starts here (assignStart picks its kind).
 
    Marcos 10/19/2026: "I want to be able to assign specific assignments for the math fact reviews.
    When the student logs in, a large banner should show and should force the student to do the
@@ -13,7 +16,7 @@
    whole site opens after the last one. Mr. O adds each one to the end or the front of the list, or
    replaces the list.
 
-   THE SHEET — the facts-assign tab, one row per assignment, for all three sites. It is written with the
+   THE SHEET — the facts-assign tab, one row per assignment, for all three kinds. It is written with the
    sheet's usual 'submit', so the Apps Script did not change:
      name       '<student> #<order>' — order is the ms it was assigned (end of the list) or minus that
                 (front of the list); the list is sorted by it. The sheet's leaderboard read gives back
@@ -21,7 +24,9 @@
                 assignment from before lists, 10/19; it is sorted by its score.)
      sessionId  'FA-<ms assigned>-<n>'   one per assignment, so each one is updated on its own
      form       'facts-review · Mult · 6s · Get 20 right · Type It · Stop after 40 tries'
-                (site · operation · set · goal · Type It | Choice | Either · try limit), or 'None' = taken away.
+                (kind · operation · set · goal · Type It | Choice | Either · try limit), or 'None' = taken away.
+                The kind is the key its site had (facts-review · facts-tens · facts-addsub), so rows from
+                before 10/27 read the same.
                 The try limit (Marcos 10/19 evening: "build the try limit for typed, multiple choice and
                 student's choice") ends the assignment after that many answers even if the goal is not met,
                 so a student who doesn't know the set yet is never stuck. A row without one has no limit.
@@ -44,10 +49,11 @@ const ASSIGN_CACHE_V1 = 'facts_assign_v1';  // + ':' + name — one assignment, 
 const ASSIGN_WAIT_MS = 10000;
 const ASSIGN_MAX_KEY = 1e15;
 
+// The kinds an assignment can be (a key of the page's KINDS) and the sheet's word for each operation
 const ASSIGN_SITES = {
-    'facts-review': { title: 'Multiplication & Division', path: 'math-fact-review',        suffix: '',        ops: { Mult: 'multiplication', Div: 'division' } },
-    'facts-tens':   { title: 'Multiples of 10',           path: 'math-fact-review-tens',   suffix: ' (x10s)', ops: { Mult: 'multiplication', Div: 'division' } },
-    'facts-addsub': { title: 'Addition & Subtraction',    path: 'math-fact-review-addsub', suffix: '',        ops: { Add: 'addition', Sub: 'subtraction' } }
+    'facts-review': { title: 'Multiplication & Division', suffix: '',        ops: { Mult: 'multiplication', Div: 'division' } },
+    'facts-tens':   { title: 'Multiples of 10',           suffix: ' (x10s)', ops: { Mult: 'multiplication', Div: 'division' } },
+    'facts-addsub': { title: 'Addition & Subtraction',    suffix: '',        ops: { Add: 'addition', Sub: 'subtraction' } }
 };
 const ASSIGN_OPS = {
     Mult: { word: 'Multiplication', sign: '×' },
@@ -66,7 +72,7 @@ let assignment = null;   // the first unfinished one (what the banner shows), or
 let assignRun  = null;   // while they practice it: { baseElapsed } (seconds from earlier tries)
 let assignTurn = 0;      // which sign-in a sheet read belongs to
 
-// ── The banner screen (built here, so the three index.html files only call in) ──
+// ── The banner screen (built here, so index.html only calls in) ──
 (function buildAssignScreen() {
     const css = document.createElement('style');
     css.textContent = `
@@ -76,22 +82,22 @@ let assignTurn = 0;      // which sign-in a sheet read belongs to
         .assign-eyebrow { font-size: 1.05rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #7a5c00; margin-bottom: 10px !important; }
         .assign-what { font-size: 2.3rem; font-weight: 800; color: #2c3e50; line-height: 1.2; margin-bottom: 8px !important; }
         .assign-goal { font-size: 1.7rem; font-weight: 800; color: #1e7d46; margin-bottom: 6px !important; }
-        .assign-how, .assign-where { font-size: 1.3rem; color: #333; font-weight: 600; margin-bottom: 4px !important; }
-        .assign-where { color: #a04000; }
+        .assign-how { font-size: 1.3rem; color: #333; font-weight: 600; margin-bottom: 4px !important; }
         .assign-progress { margin: 14px auto 0; max-width: 380px; }
         .assign-bar { height: 16px; background: #eee; border-radius: 10px; overflow: hidden; }
         .assign-bar span { display: block; height: 100%; background: #2ecc71; }
         .assign-count { font-size: 1.2rem; font-weight: 700; color: #333; margin-top: 6px !important; }
         .assign-more { font-size: 1.2rem; font-weight: 700; color: #7a5c00; margin-top: 10px !important; }
         .assign-go { display: inline-block; box-sizing: border-box; width: 100%; max-width: 440px; margin-top: 18px;
-            background-color: var(--success-color); font-size: 1.35rem; text-decoration: none; }
-        .assign-rule { font-size: 1.15rem; color: #444; font-weight: 600; margin-top: 12px !important; }
+            background-color: var(--success-color); font-size: 1.35rem; }
         .assign-checking { font-size: 1.4rem; color: #444; font-weight: 700; padding: 18px 0; }
         .assign-say { cursor: pointer; margin-left: 8px; font-size: 0.75em; opacity: 0.8; user-select: none; }
         .assign-say:hover, .assign-say:focus { opacity: 1; outline: none; }
-        .assign-listen { position: absolute; top: 12px; right: 14px; background: white; border: 2px solid #f1c40f;
-            border-radius: 50px; padding: 6px 14px; font-size: 1rem; font-weight: 700; color: #7a5c00; cursor: pointer; font-family: inherit; }
-        @media (max-width: 600px) { .assign-listen { position: static; display: block; margin: 0 auto 12px; } }
+        @media (max-width: 600px) {   /* phones (Marcos 10/27: "this looks uneven") */
+            .assign-banner { padding: 18px 14px 16px; }
+            .assign-eyebrow { letter-spacing: 0; }
+            .assign-what { font-size: 1.8rem; }
+        }
         body.assign-on #style-screen .btn-nav { display: none; }   /* no way back to the levels during an assignment */
         #practice-screen .feedback.final { height: auto; min-height: 30px; }   /* the end message may take two lines */
     `;
@@ -108,17 +114,13 @@ let assignTurn = 0;      // which sign-in a sheet read belongs to
         <section class="assign-banner" aria-live="polite">
             <p class="assign-checking">⏳ Getting your practice ready…</p>
             <div class="assign-body hidden">
-                <button type="button" class="assign-listen" onclick="assignSayAll()">🔊 Listen</button>
                 <p class="assign-eyebrow"></p>
                 <p class="assign-what"></p>
                 <p class="assign-goal"></p>
                 <p class="assign-how"></p>
-                <p class="assign-where"></p>
                 <div class="assign-progress"><div class="assign-bar"><span></span></div><p class="assign-count"></p></div>
                 <p class="assign-more"></p>
                 <button type="button" class="btn assign-go assign-start" onclick="assignStart()"></button>
-                <a class="btn assign-go assign-away" href="#"></a>
-                <p class="assign-rule"></p>
             </div>
         </section>`;
     document.querySelector('.container').appendChild(screen);
@@ -127,11 +129,11 @@ let assignTurn = 0;      // which sign-in a sheet read belongs to
     // on the banner and on the end message
     document.addEventListener('click', e => {
         const spk = e.target.closest('.assign-say');
-        if (spk) assignSay(spk.parentElement.dataset.say);
+        if (spk) assignSay(spk.closest('[data-say]').dataset.say);
     });
     document.addEventListener('keydown', e => {
         const spk = e.target.closest('.assign-say');
-        if (spk && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); assignSay(spk.parentElement.dataset.say); }
+        if (spk && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); assignSay(spk.closest('[data-say]').dataset.say); }
     });
 })();
 
@@ -144,25 +146,26 @@ function assignSay(text) {
     speechSynthesis.speak(u);
 }
 
-function assignSayAll() {
-    const lines = [...document.querySelectorAll('#assign-screen .assign-body p[data-say]')]
-        .filter(p => !p.classList.contains('hidden') && !p.closest('.hidden'));
-    assignSay(lines.map(p => p.dataset.say).join(' '));
-}
-
-/* One line of the banner: its words, what the 🔊 says, and the 🔊 itself. */
+/* One line of the banner: its words, what the 🔊 says, and the 🔊 itself — kept with the last word, so on a
+   narrow screen the 🔊 never sits alone on a line. */
 function assignLine(el, text, say = text) {
-    el.textContent = text;
+    el.textContent = '';
     el.dataset.say = say;
     el.classList.toggle('hidden', !text);
     if (!text) return;
+    const cut = text.lastIndexOf(' ');
+    el.append(text.slice(0, cut + 1));
+    const tail = document.createElement('span');
+    tail.style.whiteSpace = 'nowrap';
+    tail.textContent = text.slice(cut + 1);
     const spk = document.createElement('span');
     spk.className = 'assign-say';
     spk.setAttribute('role', 'button');
     spk.setAttribute('tabindex', '0');
     spk.setAttribute('aria-label', 'Listen');
     spk.textContent = '🔊';
-    el.appendChild(spk);
+    tail.appendChild(spk);
+    el.appendChild(tail);
 }
 
 // ── Reading the assignment ──
@@ -355,7 +358,7 @@ function assignShowNext() {
 /* The banner — the only screen a student with an open assignment can reach (goHome comes here). */
 function showAssignment() {
     document.body.classList.add('assign-on');
-    assignRender(assignment.site === GAME_KEY ? 'here' : 'elsewhere');
+    assignRender('banner');
     showScreen('assign');
 }
 
@@ -369,35 +372,28 @@ function assignRender(mode) {
 
     const a = assignment, info = ASSIGN_SITES[a.site], op = ASSIGN_OPS[a.op];
     const setSay = a.min === a.max ? `number ${a.min}` : a.set.replace('-', ' to ');
-    const here = mode === 'here';
-    assignLine($('.assign-eyebrow'), '📌 Your assignment from Mr. O', 'Your assignment from Mister O.');
+    assignLine($('.assign-eyebrow'), '📌 Assignment from Mr. O', 'Assignment from Mister O.');   // fewer words (Marcos 10/27: "seems cluttered")
     assignLine($('.assign-what'), `${op.sign} ${op.word}: ${a.set}${info.suffix}`, `${op.word}. ${setSay}.`);
     assignLine($('.assign-goal'), `Get ${a.goal} right.`);
     assignLine($('.assign-how'), ASSIGN_STYLES[a.how].text);
-    assignLine($('.assign-where'), here ? '' : `This assignment is on the ${info.title} site.`);
     const pct = Math.min(100, Math.round((a.right / a.goal) * 100));
     $('.assign-progress').classList.toggle('hidden', a.right === 0);
     $('.assign-bar span').style.width = pct + '%';
     assignLine($('.assign-count'), a.right ? `You have ${a.right} of ${a.goal} right so far.` : '');
     const more = assignList.filter(x => !assignFinished(x)).length - 1;
     assignLine($('.assign-more'), more > 0 ? `After this one, you have ${more} more.` : '');
-    $('.assign-start').classList.toggle('hidden', !here);
-    $('.assign-start').innerHTML = `${a.right ? '▶️ Keep Going' : '▶️ Start My Assignment'}<span class="btn-sub">Get ${a.goal} right to finish.</span>`;
-    const away = $('.assign-away');
-    away.classList.toggle('hidden', here);
-    away.href = `../${info.path}/`;
-    away.innerHTML = `➡️ Go to ${info.title}<span class="btn-sub">You stay signed in.</span>`;
-    assignLine($('.assign-rule'), 'Finish this assignment first. Then you can practice anything you want.');
+    $('.assign-start').textContent = a.right ? '▶️ Keep Going' : '▶️ Start';   // the goal is the line above
 }
 
 // ── Doing the assignment ──
 
-/* ▶️ Start My Assignment: the site's own steps, with Mr. O's choices already made. */
+/* ▶️ Start (on the banner): the site's own steps, with Mr. O's choices already made. */
 function assignStart() {
     const a = assignment;
-    if (!a || a.site !== GAME_KEY) return;
+    if (!a) return;
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     assignRun = { baseElapsed: a.elapsed };
+    setKind(a.site);                                  // its kind of facts: its sheet tab, levels and questions
     initSelection(ASSIGN_SITES[a.site].ops[a.op]);   // also turns the 3-minute timer off
     pickSet(a.min, a.max);
     const style = ASSIGN_STYLES[a.how].style;
