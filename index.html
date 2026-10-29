@@ -229,8 +229,8 @@
         }
 
         .score-box span { margin: 0 10px; }
-        .correct-txt { color: var(--success-color); }
-        .wrong-txt { color: var(--danger-color); }
+        .correct-txt { color: #1e7d46; }   /* the ✓ / ✗ counter: dark enough to read (10/29; #2ecc71 was 2.0:1) */
+        .wrong-txt { color: #c0392b; }
         .timer-txt { color: var(--primary-color); font-size: 1.2rem; }
         .timer-low { color: var(--danger-color); animation: pulse 1s infinite; }
 
@@ -271,6 +271,15 @@
             text-align: center;
         }
         .history-table th { background-color: #f8f9fa; color: #555; border-radius: 5px;}
+        /* percent right, set apart from the ✓ / ✗ numbers by space and a thin line (Marcos 10/29: "separate the percentage
+           a little from the green and red numbers") */
+        .history-pct { display: inline-block; min-width: 46px; text-align: left;
+            margin-left: 14px; padding-left: 14px; border-left: 2px solid #d5d8de; color: #2c3e50; }
+        .history-score { display: inline-block; min-width: 100px; text-align: right; }   /* same width every row: the lines and percents line up */
+        /* ✓ right · ✗ wrong — the marks say which is which, not the color alone (Marcos 10/29: "is the green and red
+           clear enough"); dark enough to read: 4.9:1 and 5.1:1 on the table (the old #2ecc71 was 2.0:1) */
+        .history-right { color: #1e7d46; font-weight: 700; }
+        .history-wrong { color: #c0392b; font-weight: 700; margin-left: 6px; }
 
         /* --- Student login --- */
         .login-box { max-width: 380px; margin: 25px auto 10px; text-align: left; }
@@ -842,7 +851,11 @@
         let msg = "Review Finished!";
         if (timeUp) msg = "Time's Up!";
 
-        ui.feedback.innerText = `${msg} Final Score: ${state.score.correct} Correct, ${state.score.wrong} Wrong.`;
+        // the percent once, at the end — never while practicing (Marcos 10/29: "it might be a deterant to keep flashing it
+        // with every answer given")
+        const total = state.score.correct + state.score.wrong;
+        ui.feedback.innerText = `${msg} Final Score: ${state.score.correct} Correct, ${state.score.wrong} Wrong.` +
+            (total ? `\nThat's ${Math.round(state.score.correct / total * 100)}%.` : '');   // its own line: never split
         ui.feedback.className = "feedback final";
 
         saveHistory();
@@ -897,12 +910,14 @@
 
         state.history.forEach(row => {
             const timerIcon = row.timerUsed ? '⏱️' : '';
+            // the percent right next to the score (Marcos 10/28: "there should be a percentage correct next to it")
+            const pct = Math.round(row.correct / (row.correct + row.wrong) * 100);
             html += `
                 <tr>
                     <td>${row.time}</td>
                     <td>${row.mode}</td>
                     <td>${row.label}</td>
-                    <td><span style="color:#2ecc71">${row.correct}</span> / <span style="color:#e74c3c">${row.wrong}</span> ${timerIcon}</td>
+                    <td><span class="history-score"><span class="history-right">✓ ${row.correct}</span> <span class="history-wrong">✗ ${row.wrong}</span></span> <strong class="history-pct">${pct}%</strong> ${timerIcon}</td>
                 </tr>
             `;
         });
