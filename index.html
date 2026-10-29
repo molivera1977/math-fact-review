@@ -509,7 +509,7 @@
 </div>
 
 <script src="share.js?v=3"></script>
-<script src="assign.js?v=8"></script>
+<script src="assign.js?v=8-voice1"></script>
 <script>
     // --- The three kinds of facts ---
     // Marcos 10/27: one site "so my assignments arent split amongest different sites". Until then each
@@ -938,6 +938,25 @@
     // Each practice row goes to its kind's tab (state.kind: facts-addsub · facts-review · facts-tens)
     const LOGIN_KEY = 'facts_student_v1';
     const READ_RATE = 0.82;   // every read aloud on the class sites (Marcos 10/26)
+    /* THE SAME VOICE AS QPS (Marcos 10/28, on Parts of Speech HQ: "why can't this site talk like QPS" · "the reading
+       speed also sounds different on QPS"; after the fix: "i like the sound and pacing of the read aloud"): every reading
+       asks for English and uses the device's own default English voice, picked the way the QPS Literacy Hub picks it
+       (qps-literacy-hub/readaloud.js). Asking only for "en-US" let the browser choose a different voice, which sounds
+       different at the same 0.82. A device that lists no voices yet still gets English. */
+    let _enVoice = null;
+    function englishVoice() {
+        if (_enVoice) return _enVoice;
+        const all = (window.speechSynthesis && speechSynthesis.getVoices && speechSynthesis.getVoices()) || [];
+        const isEn = v => /^en([-_]|$)/i.test((v && v.lang) || ''), us = v => /^en[-_]US$/i.test(v.lang || '');
+        _enVoice = all.find(v => v.default && isEn(v)) || all.find(v => us(v) && v.localService) || all.find(us) || all.find(isEn) || null;
+        return _enVoice;                         // null until the device lists its voices (Chrome lists them late): asked again next time
+    }
+    function english(u) {
+        u.lang = 'en-US';
+        const v = englishVoice();
+        if (v) { try { u.voice = v; } catch (e) { /* a voice the browser won't take: en-US still asks for English */ } }
+        return u;
+    }
     const PARTIAL_EVERY = 5; // save an in-progress row every 5 answers
 
     // ⚠️ ROSTER SYNC — keep identical to the Teacher Dashboard ROSTER
@@ -1076,7 +1095,7 @@
         if (!text || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
+        english(u);
         u.rate = READ_RATE;
         speechSynthesis.speak(u);
     }

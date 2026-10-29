@@ -160,7 +160,7 @@ function assignSay(text) {
     if (!text || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
+    english(u);      // the device's own English voice, as QPS (index.html; Marcos 10/28)
     u.rate = 0.82;   // a read the student asks for (the class sites' rate, Marcos 10/26)
     speechSynthesis.speak(u);
 }
