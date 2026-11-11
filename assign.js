@@ -42,14 +42,17 @@
      done       true once they get the goal right or reach the try limit (this page), or on a 'None' row (Mr. O)
 
    At sign-in the student waits for that read (up to ASSIGN_WAIT_MS). If the sheet cannot be reached,
-   the list this device saw last is used; a device that saw none lets the student in. After each
-   assignment the tab is read again, so one Mr. O added meanwhile comes next.
+   the list this device saw last is used; a device that saw none lets the student in. A read that is
+   only slow is not given up on (11/11): it can still bring the assignment up to ASSIGN_LATE_MS later
+   (assignLate). After each assignment the tab is read again, so one Mr. O added meanwhile comes next.
    Mr. O, a guest, Teacher Access and a share link are never assigned anything.
 ═══════════════════════════════════════════════════════════════════════════ */
 const ASSIGN_GAME    = 'facts-assign';
 const ASSIGN_CACHE   = 'facts_assign_v2';   // + ':' + name — the list this device saw last, with its progress
 const ASSIGN_CACHE_V1 = 'facts_assign_v1';  // + ':' + name — one assignment, from before lists (read once, as a list of one)
 const ASSIGN_WAIT_MS = 10000;
+const ASSIGN_LATE_MS = 60000;               // …but the sign-in read keeps going this long (11/11: up to 26 s at fact time)
+const ASSIGN_STILL_COMING = 'still coming';
 const ASSIGN_MAX_KEY = 1e15;
 
 // The kinds an assignment can be (a key of the page's KINDS) and the sheet's word for each operation
@@ -278,10 +281,10 @@ function assignSetList(list) {
     assignment = list.find(a => !assignFinished(a)) || null;
 }
 
-/* The facts-assign tab (one row per student). null = the sheet could not be reached in time. */
-async function assignReadTab() {
+/* The facts-assign tab (one row per student). null = the sheet could not be reached in time (waitMs). */
+async function assignReadTab(waitMs = ASSIGN_WAIT_MS) {
     const stop = new AbortController();
-    const timer = setTimeout(() => stop.abort(), ASSIGN_WAIT_MS);
+    const timer = setTimeout(() => stop.abort(), waitMs);
     try {
         const res = await fetch(`${SHEET_URL}?action=leaderboard&game=${ASSIGN_GAME}`, { cache: 'no-store', signal: stop.signal });
         const rows = await res.json();
@@ -330,17 +333,37 @@ async function assignCheck(name) {
     }
     assignRender('checking');
     showScreen('assign');
-    const rows = await assignReadTab();
+    const read = assignReadTab(ASSIGN_LATE_MS);
+    const rows = await Promise.race([read, new Promise(done => setTimeout(() => done(ASSIGN_STILL_COMING), ASSIGN_WAIT_MS))]);
     if (turn !== assignTurn || studentName !== name) return;   // signed out, or someone else signed in, meanwhile
     let list;
-    if (rows === null) {
+    if (rows === null || rows === ASSIGN_STILL_COMING) {
         list = assignSavedList(name);                           // the sheet is out of reach: what this device saw last
+        if (rows === ASSIGN_STILL_COMING) read.then(late => assignLate(name, turn, late));   // …and it may still come
     } else {
         list = assignBuild(rows, name, assignSavedList(name));
         assignSaveList(name, list);
     }
     assignSetList(list);
     goHome();
+}
+
+/* 11/11/2026 (Marcos: "many kids when they logged in did not see their assignments waiting for them"): at
+   fact time the sheet was so busy (1:56–2:06 PM saves took 10–51 s, reads up to 26 s) that the sign-in read
+   missed the 10-second wait, and the page let them in with no assignment. He chose to still let them in at
+   10 s but keep listening for that same read — no second read, nothing more for a busy sheet. When it comes:
+   still choosing → the assignment shows right away; practicing → the round is never cut off, and its end
+   button is 📌 Next Assignment. Signed out meanwhile → nothing. */
+function assignLate(name, turn, rows) {
+    if (rows === null || turn !== assignTurn || studentName !== name) return;
+    const list = assignBuild(rows, name, assignList);           // with what they did on this device meanwhile
+    assignSaveList(name, list);
+    if (assignRun) { assignList = list.map(a => (a.id === assignment.id ? assignment : a)); return; }
+    assignSetList(list);
+    if (!assignment) document.body.classList.remove('assign-on');
+    const choosing = screens.practice.classList.contains('hidden');
+    if (!screens.assign.classList.contains('hidden') || (assignment && choosing)) goHome();   // on the banner, or still choosing: it shows now
+    else assignShowNext();                                                                     // practicing: 📌 Next Assignment at the end
 }
 
 /* After an assignment: read the tab again (in the background), so one Mr. O added or took away meanwhile
