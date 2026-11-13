@@ -41,6 +41,10 @@
                 so a Correct equal to the score means 0.
      done       true once they get the goal right or reach the try limit (this page), or on a 'None' row (Mr. O)
 
+   PART OF A SET (11/13, Marcos: "assign only half of a set of math facts … 1-6 times 3 and 7-12 times 3",
+   "maybe even thirds", "3 times 1-4, 3 times 5-8, 3 times 9-12"): the set may end in ' (lo-hi)' — '3s (1-6)',
+   'Mixed 2-4 (9-12)' — and then the other number is only lo … hi (×10 on Multiples of 10; the answer for ÷ and −).
+
    At sign-in the student waits for that read (up to ASSIGN_WAIT_MS). If the sheet cannot be reached,
    the list this device saw last is used; a device that saw none lets the student in. A read that is
    only slow is not given up on (11/11): it can still bring the assignment up to ASSIGN_LATE_MS later
@@ -202,19 +206,23 @@ function assignParse(row, student) {
     const info = ASSIGN_SITES[site];
     if (!info || !info.ops[op] || !ASSIGN_STYLES[how]) return null;
     const facts = site === 'facts-second' ? assignFactList(set) : null;   // 🔁 Second Chance: the student's own facts
-    const one   = /^(\d+)s$/.exec(set || '');
-    const range = /^(?:Mixed|All) (\d+)-(\d+)$/.exec(set || '');
+    const one   = /^(\d+)s(?: \((\d+)-(\d+)\))?$/.exec(set || '');
+    const range = /^(?:Mixed|All) (\d+)-(\d+)(?: \((\d+)-(\d+)\))?$/.exec(set || '');
     const want  = /^Get (\d+) right$/.exec(goal || '');
     const limit = /^Stop after (\d+) tries$/.exec(stopAfter || '');
     if ((facts ? !facts.length : !one && !range) || !want || (stopAfter && !limit)) return null;
     const min = facts ? 0 : Number(one ? one[1] : range[1]);
     const max = facts ? 0 : Number(one ? one[1] : range[2]);
     if ((!facts && !(min >= 1 && min <= max && max <= 12)) || !(Number(want[1]) >= 1)) return null;
+    const lohi = one ? one.slice(2, 4) : range ? range.slice(3, 5) : [];
+    const part = lohi[0] ? { lo: Number(lohi[0]), hi: Number(lohi[1]) } : null;   // a part of the set (11/13)
+    if (part && !(part.lo >= 1 && part.lo <= part.hi && part.hi <= 12)) return null;
     if (row.name !== student && !/^-?\d+$/.test(row.name.slice(student.length + 2))) return null;
     const key   = Number(row.score) || 0;
     const right = Number(row.correct) === key ? 0 : Math.max(0, Number(row.correct) || 0);
     return {
-        id: String(row.sessionId), rowName: row.name, form: row.form, key, site, op, set, min, max, how, facts,
+        id: String(row.sessionId), rowName: row.name, form: row.form, key, site, op, set, min, max, how, facts, part,
+        base:     part ? set.replace(/ \(\d+-\d+\)$/, '') : set,   // the set without its part: '3s'
         order:    row.name === student ? key : Number(row.name.slice(student.length + 2)),
         goal:     Number(want[1]),
         limit:    limit ? Number(limit[1]) : 0,   // 0 = no try limit
@@ -228,6 +236,31 @@ function assignParse(row, student) {
 
 const assignStopped  = a => a.limit > 0 && a.answered >= a.limit && a.right < a.goal;   // the try limit, not the goal
 const assignFinished = a => a.done || a.right >= a.goal || assignStopped(a);
+
+/* The part of the set an assignment is for, while it is being practiced (generateQuestion and describeSet
+   ask); null = the whole set, as in free practice. */
+const assignPart = () => (assignRun && assignment && assignment.part) || null;
+
+// A part, the way the student sees and hears it: one number → its first and last fact ("3 × 1 to 3 × 6");
+// a mixed set → the other number (× +) or the answer (÷ −) ("Mixed 2-4, × 1 to 6")
+const ASSIGN_PART_FACT = {
+    multiplication: (n, b) => [`${n} × ${b}`, `${n} times ${b}`],
+    division:       (n, b) => [`${n * b} ÷ ${n}`, `${n * b} divided by ${n}`],
+    addition:       (n, b) => [`${n} + ${b}`, `${n} plus ${b}`],
+    subtraction:    (n, b) => [`${n + b} − ${n}`, `${n + b} minus ${n}`]
+};
+function assignPartText(a) {
+    const word = ASSIGN_SITES[a.site].ops[a.op], ten = a.site === 'facts-tens' ? 10 : 1;
+    const lo = a.part.lo * ten, hi = a.part.hi * ten;
+    if (a.min === a.max) {
+        const [f1, s1] = ASSIGN_PART_FACT[word](a.min, lo), [f2, s2] = ASSIGN_PART_FACT[word](a.min, hi);
+        return [`${f1} to ${f2}`, `${s1} to ${s2}`];
+    }
+    const set = `${a.base}${ASSIGN_SITES[a.site].suffix}`, setSay = a.base.replace('-', ' to ');
+    if (word === 'multiplication') return [`${set}, × ${lo} to ${hi}`, `${setSay}, times ${lo} to ${hi}`];
+    if (word === 'addition')       return [`${set}, + ${lo} to ${hi}`, `${setSay}, plus ${lo} to ${hi}`];
+    return [`${set}, answers ${lo} to ${hi}`, `${setSay}, answers ${lo} to ${hi}`];
+}
 
 /* The sheet's row and this device's copy of the same assignment: the most progress wins. */
 function assignMerge(fromSheet, saved) {
@@ -415,10 +448,11 @@ function assignRender(mode) {
     if (mode === 'checking') return;
 
     const a = assignment, info = ASSIGN_SITES[a.site], op = ASSIGN_OPS[a.op];
-    const setSay = a.min === a.max ? `number ${a.min}` : a.set.replace('-', ' to ');
+    const setSay = a.min === a.max ? `number ${a.min}` : a.base.replace('-', ' to ');
     assignLine($('.assign-eyebrow'), '📌 Assignment from Mr. O', 'Assignment from Mister O.');   // fewer words (Marcos 10/27: "seems cluttered")
     const facts = a.facts && `${a.facts.length} fact${a.facts.length === 1 ? '' : 's'}`;
     if (a.facts) assignLine($('.assign-what'), `${op.sign} ${op.word}: ${facts}`, `Second chance. ${facts} you missed.`);
+    else if (a.part) { const [text, say] = assignPartText(a); assignLine($('.assign-what'), `${op.sign} ${op.word}: ${text}`, `${op.word}. ${say}.`); }
     else assignLine($('.assign-what'), `${op.sign} ${op.word}: ${a.set}${info.suffix}`, `${op.word}. ${setSay}.`);
     assignLine($('.assign-goal'), `Get ${a.goal} right.`);
     assignLine($('.assign-how'), ASSIGN_STYLES[a.how].text);

@@ -509,7 +509,7 @@
 </div>
 
 <script src="share.js?v=3"></script>
-<script src="assign.js?v=9-late1"></script>
+<script src="assign.js?v=10-part1"></script>
 <script>
     // --- The three kinds of facts ---
     // Marcos 10/27: one site "so my assignments arent split amongest different sites". Until then each
@@ -710,6 +710,7 @@
         }
 
         ui.practiceTitle.innerText = kind().mix ? `🔁 Second Chance: ${factCount(state.facts.length)}`
+            : assignPart() ? `${modeTitle}: ${assignPartText(assignment)[0]}`   // 📌 part of a set: "3 × 1 to 3 × 6"
             : `${modeTitle}: ${rangeTitle}` + (kind().tens ? ' (x10s)' : '');
 
         showScreen('practice');
@@ -738,8 +739,12 @@
 
         const range = state.maxFactor - state.minFactor + 1;
         const numA = Math.floor(Math.random() * range) + state.minFactor;
-        // Multiples of 10: the other number is 10, 20 … 120 (numA is the base number); otherwise 0 … 12
-        const numB = kind().tens ? (Math.floor(Math.random() * 12) + 1) * 10 : Math.floor(Math.random() * 13);
+        // Multiples of 10: the other number is 10, 20 … 120 (numA is the base number); otherwise 0 … 12.
+        // 📌 An assignment for part of the set (assign.js, 11/13): only lo … hi of it ("3 times 1-4").
+        const part = assignPart();
+        const lowB = part ? part.lo : kind().tens ? 1 : 0, highB = part ? part.hi : 12;
+        const b = Math.floor(Math.random() * (highB - lowB + 1)) + lowB;
+        const numB = kind().tens ? b * 10 : b;
 
         if (state.mode === 'mix') {
             // 🔁 Second Chance: one of the student's own facts — never the same one twice in a row
@@ -1132,7 +1137,8 @@
         else if (state.minFactor === state.maxFactor) set = `${state.minFactor}s`;
         else if (state.minFactor === low && state.maxFactor === 12) set = `All ${low}-12`;
         else set = `Mixed ${state.minFactor}-${state.maxFactor}`;
-        return `${op} · ${set}` + (state.timer.active ? ' · Timed' : '') + (state.answerStyle === 'choice' ? ' · Choice' : '') + (assignRun ? ' · Assigned' : '');
+        const part = assignPart();   // 📌 part of a set: 'Mult · 3s · 1-6 · Assigned'
+        return `${op} · ${set}` + (part ? ` · ${part.lo}-${part.hi}` : '') + (state.timer.active ? ' · Timed' : '') + (state.answerStyle === 'choice' ? ' · Choice' : '') + (assignRun ? ' · Assigned' : '');
     }
 
 
