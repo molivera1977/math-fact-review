@@ -331,7 +331,7 @@ async function assignReadTab(waitMs = ASSIGN_WAIT_MS) {
 
 /* Progress (not finished) or the finish back to the student's row on the sheet. */
 function assignPost(a) {
-    if (teacherPreview || !studentName) return;
+    if (!studentName) return;
     fetch(SHEET_URL, {
         method: 'POST', mode: 'no-cors', keepalive: true,
         headers: { 'Content-Type': 'application/json' },
@@ -360,7 +360,7 @@ async function assignCheck(name) {
     assignment = null;
     assignRun = null;
     document.body.classList.remove('assign-on');
-    if (teacherPreview || window.SHARE_MODE || name === TEACHER_NAME || !ROSTER.some(s => s.name === name)) {
+    if (window.SHARE_MODE || name === TEACHER_NAME || !ROSTER.some(s => s.name === name)) {
         showScreen('welcome');
         return;
     }

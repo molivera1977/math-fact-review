@@ -352,18 +352,83 @@
         /* Marcos 10/14: each button names where it goes, with a short line underneath */
         .btn-sub { display: block; font-size: 0.78em; font-weight: 600; opacity: 0.9; margin-top: 3px; }
         .btn-home-large { max-width: 460px; }
+
+        /* ── TEACHER SCREEN · ANSWER KEY · TRY IT AS A STUDENT (11/14, as on the other class sites) ── */
+        .t-bar { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; background: #fff3cd; border: 2px solid #ffc107;
+                 border-radius: 12px; padding: 8px 14px; margin-bottom: 14px; color: #856404; font-weight: 700; text-align: left; }
+        .t-title { flex: 1 1 auto; font-size: 1.1rem; }
+        .t-note { font-weight: 400; font-size: 0.9rem; }
+        .t-exit { background: none; border: 1px solid #ffc107; border-radius: 8px; padding: 5px 12px; font: inherit; font-weight: 700;
+                  color: #856404; cursor: pointer; }
+        #teacher-screen, #key-screen { text-align: left; }
+        .t-h { font-size: 1rem; color: var(--primary-color); margin: 16px 0 6px; }
+        .t-h-note { font-weight: 400; font-size: 0.85rem; color: #666; }
+        .t-sub { margin: 8px 0 4px; font-size: 0.85rem; color: #777; font-weight: 700; }
+        .t-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .t-pick { font: inherit; font-size: 0.98rem; font-weight: 700; padding: 9px 14px; border-radius: 10px; cursor: pointer;
+                  background: #fff; color: #2c6fb7; border: 2px solid #c5d3ea; }
+        .t-pick:hover { border-color: var(--primary-color); }
+        .t-pick.on { background: #2c6fb7; color: #fff; border-color: #2c6fb7; }
+        .t-picked { margin: 18px 0 8px; font-weight: 700; color: #333; }
+        .t-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .t-act { font: inherit; font-size: 1.08rem; font-weight: 700; text-align: left; padding: 14px 16px; border-radius: 14px; cursor: pointer;
+                 background: #fff; color: #2c6fb7; border: 3px solid #2c6fb7; box-shadow: 0 4px 0 #c5d3ea; }
+        .t-act:hover { background: #eef3ff; }
+        .t-act span { display: block; margin-top: 6px; font-size: 0.85rem; font-weight: 400; color: #444; line-height: 1.4; }
+
+        /* ✅ Answer key: one fact chart per number of the level, the answer in green */
+        .key-note { margin: 0 0 12px; font-size: 0.9rem; color: #555; }
+        .key-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        .key-col { border: 1px solid #e3e8f0; border-radius: 12px; padding: 8px 12px 10px; break-inside: avoid; page-break-inside: avoid; }
+        .key-col h4 { margin: 0 0 4px; font-size: 1.05rem; color: #2c3e50; }
+        .key-facts { border-collapse: collapse; font-size: 1.05rem; }
+        .key-facts td { padding: 1px 3px; white-space: nowrap; }
+        .key-facts td:first-child { text-align: right; }
+        .key-facts .key-right { color: #1e7d46; font-weight: 800; text-align: left; }
+        .key-print-head { display: none; }
+
+        /* The Teacher PIN, asked in the page (no pop-up) */
+        #pin-modal { display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 500; }
+        #pin-modal.hidden { display: none !important; }
+        .pin-modal-inner { background: white; border-radius: 20px; padding: 2rem 2rem 1.5rem; max-width: 380px; width: 90%;
+                           box-shadow: 0 10px 30px rgba(0,0,0,0.4); box-sizing: border-box; }
+        .pin-modal-inner h3 { color: #2c6fb7; margin: 0 0 10px; text-align: center; }
+        .pin-modal-inner p { text-align: center; color: #555; margin: 0 0 14px; font-size: 0.95rem; line-height: 1.5; }
+        #pin-modal-input { width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: 10px; border: 2px solid #ccc;
+                           font-size: 1.05rem; font-family: inherit; margin-bottom: 8px; }
+        #pin-modal-error { color: #c0392b; font-weight: bold; min-height: 20px; margin-bottom: 10px; font-size: 0.9rem; text-align: center; }
+        .pin-modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .pin-modal-btns .btn { margin: 0; font-size: 1rem; }
+
+        /* 👀 Try it as a student: the teacher's bar along the bottom */
+        .teach-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9998; display: flex; align-items: center; justify-content: center;
+                     flex-wrap: wrap; gap: 6px 12px; padding: 7px 12px; background: #fff3cd; border-top: 2px solid #ffc107;
+                     color: #856404; font: 700 0.9rem/1.3 system-ui, sans-serif; }
+        .teach-bar button { font: inherit; padding: 5px 12px; border-radius: 8px; border: 1px solid #d4a106; background: #fff; color: #856404; cursor: pointer; }
+        body.teach-on { padding-bottom: 64px; }
+
+        /* 🖨️ Print the answer key: its title on top, the charts, nothing else on the page */
+        @media print {
+            body.key-printing { display: block; background: #fff; padding: 0; min-height: 0; }
+            body.key-printing .container { max-width: none; padding: 0; box-shadow: none; border-radius: 0; background: #fff; }
+            body.key-printing .container > :not(#key-screen),
+            body.key-printing #key-screen > .t-bar,
+            body.key-printing .share-banner,
+            body.key-printing .teach-bar { display: none !important; }
+            body.key-printing .key-print-head { display: block; margin: 0 0 0.12in; padding-bottom: 0.08in; border-bottom: 2px solid #333; }
+            body.key-printing .key-print-head h1 { margin: 0; font-size: 18pt; color: #000; }
+            body.key-printing .key-print-head p { margin: 0.04in 0 0; font-size: 11pt; color: #333; }
+            body.key-printing .key-grid { grid-template-columns: repeat(4, 1fr); gap: 0.12in; font-size: 11pt; }
+            body.key-printing .key-col { border-color: #999; }
+            body.key-printing .key-facts { font-size: 11pt; }
+            body.key-printing .key-facts .key-right { color: #000; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1 id="main-title">Mr. O's Math Fact Review</h1>
-
-    <!-- Teacher preview (Marcos 10/19: "every site should have teacher access"): only after the Teacher PIN -->
-    <div id="teacher-banner" class="hidden" style="background:#fff3cd;border:2px solid #ffc107;border-radius:10px;padding:7px 14px;margin:0 auto 12px;max-width:640px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:0.9rem;font-weight:bold;color:#856404;">
-        <span>🔍 Teacher Preview — nothing is saved or sent</span>
-        <button onclick="exitTeacherPreview()" style="background:none;border:1px solid #ffc107;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-weight:bold;color:#856404;font-size:0.85rem;">✕ Exit</button>
-    </div>
 
     <div id="login-screen">
         <div class="mode-container login-art">
@@ -380,6 +445,9 @@
                 <div class="mode-label">Multiples of 10</div>
             </div>
         </div>
+        <!-- The two guest links (share.js, Marcos 11/13): the guest's start button, in place of the name list.
+             Students never see it. share.js names it, and on the teacher/admin link adds 🧑‍🏫 Teacher / admin guest. -->
+        <button type="button" id="guest-start" class="btn btn-home-large hidden" data-guest-start onclick="guestStart()">▶ Start</button>
         <div class="login-box">
             <label for="name-select">👤 Select your name:</label>
             <select id="name-select" onchange="onNameSelect()">
@@ -399,7 +467,7 @@
             <div class="login-error" id="login-error"></div>
         </div>
         <div style="text-align:right;margin-top:10px;">
-            <span onclick="promptTeacherReview()" style="font-size:0.75rem;color:#767676;cursor:pointer;user-select:none;">Teacher Access</span>
+            <span onclick="app.promptTeacherReview()" style="font-size:0.75rem;color:#767676;cursor:pointer;user-select:none;">Teacher Access</span>
         </div>
     </div>
 
@@ -506,10 +574,69 @@
         
         <button id="home-btn" class="btn btn-home-large hidden" onclick="goHome()">📋 Back to All Math Facts<span class="btn-sub">Practice something else. You stay signed in.</span></button>
     </div>
+
+    <!-- ══════════════════════════════════════════
+         TEACHER SCREEN (Teacher Access → the Teacher PIN, asked in the page). Pick a kind, an operation and a level
+         — the same levels a student picks from — then Try it as a student or the Answer key. No Slide Mode (no lesson).
+         Filled in by app._renderTeacher().
+    ══════════════════════════════════════════ -->
+    <div id="teacher-screen" class="hidden">
+        <div class="t-bar">
+            <span class="t-title">🧑‍🏫 Teacher</span>
+            <span class="t-note">Nothing here is saved or sent.</span>
+            <button type="button" class="t-exit" onclick="app.exitTeacher()">✕ Exit teacher</button>
+        </div>
+        <h3 class="t-h">Kind</h3>
+        <div class="t-row" id="t-kinds"></div>
+        <h3 class="t-h">Operation</h3>
+        <div class="t-row" id="t-ops"></div>
+        <h3 class="t-h">Level <span class="t-h-note">· the same levels a student picks from</span></h3>
+        <p class="t-sub">Mixed</p>
+        <div class="t-row" id="t-mixed"></div>
+        <p class="t-sub">One Number</p>
+        <div class="t-row" id="t-numbers"></div>
+        <p class="t-picked" id="t-picked"></p>
+        <div class="t-actions">
+            <button type="button" class="t-act" id="t-try" onclick="app.teacherTry()">👀 Try it as a student<span>This level, the way a student plays it: Type It or Multiple Choice. Nothing is saved.</span></button>
+            <button type="button" class="t-act" id="t-key" onclick="app.teacherKey()">✅ Answer key<span>Every fact this level can ask, with its answer. You can print it.</span></button>
+        </div>
+    </div>
+
+    <div id="key-screen" class="hidden">
+        <div class="t-bar">
+            <span class="t-title" id="key-title">✅ Answer key</span>
+            <button type="button" class="t-exit" onclick="app.printKey()">🖨️ Print</button>
+            <button type="button" class="t-exit" onclick="app.openTeacher()">← Teacher screen</button>
+        </div>
+        <div class="key-print-head" id="key-print-head"></div>
+        <p class="key-note" id="key-note"></p>
+        <div class="key-grid" id="key-body"></div>
+    </div>
+
+    <!-- The Teacher PIN, asked in the page -->
+    <div id="pin-modal" class="hidden">
+        <div class="pin-modal-inner">
+            <h3 id="pin-modal-title"></h3>
+            <p id="pin-modal-msg"></p>
+            <input type="password" id="pin-modal-input" placeholder="Teacher PIN…" maxlength="10" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') app.confirmPinModal()">
+            <div id="pin-modal-error"></div>
+            <div class="pin-modal-btns">
+                <button type="button" class="btn" style="background:#27ae60;" onclick="app.confirmPinModal()">✅ Confirm</button>
+                <button type="button" class="btn" style="background:#7f8c8d;" onclick="app.cancelPinModal()">✕ Cancel</button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<script src="share.js?v=3"></script>
-<script src="assign.js?v=10-part1"></script>
+<!-- Try it as a student: the teacher's bar (shown only on a ?teach= link) -->
+<div id="teach-bar" class="teach-bar hidden">
+    <span class="teach-bar-what" id="teach-what">👀 Trying it as a student · nothing is saved</span>
+    <button type="button" id="teach-back" onclick="app.backToTeacher()">← Teacher screen</button>
+</div>
+
+<script src="share.js?v=5"></script>
+<script src="assign.js?v=11-teacher"></script>
 <script>
     // --- The three kinds of facts ---
     // Marcos 10/27: one site "so my assignments arent split amongest different sites". Until then each
@@ -574,7 +701,9 @@
         selection: document.getElementById('selection-screen'),
         style: document.getElementById('style-screen'),
         practice: document.getElementById('practice-screen'),
-        assign: document.getElementById('assign-screen')   // 📌 Mr. O's assignment (assign.js)
+        assign: document.getElementById('assign-screen'),  // 📌 Mr. O's assignment (assign.js)
+        teacher: document.getElementById('teacher-screen'),   // 🧑‍🏫 the Teacher screen and its answer key (11/14)
+        key: document.getElementById('key-screen')
     };
     
     const ui = {
@@ -636,6 +765,18 @@
         showScreen('ops');
     }
 
+    // The Mixed levels of a kind (its lowest number: 1 for Add & Subtract, 2 for the others) — the level screen's
+    // buttons and the Teacher screen's both come from here
+    function mixedRanges(low) {
+        return [
+            { label: `${low}-4`, min: low, max: 4 },          // under the "Mixed" heading, so no "Mixed" on each
+            { label: "5-7", min: 5, max: 7 },
+            { label: "8-10", min: 8, max: 10 },
+            { label: "11-12", min: 11, max: 12 },
+            { label: `All ${low}-12`, min: low, max: 12, isAll: true }
+        ];
+    }
+
     // --- Step 2: Mode Selection ---
     function initSelection(mode) {
         state.mode = mode;
@@ -647,15 +788,7 @@
 
         // 1. Create Mixed Buttons (Addition & Subtraction start at 1, the others at 2)
         const low = kind().low;
-        const ranges = [
-            { label: `${low}-4`, min: low, max: 4 },          // under the "Mixed" heading, so no "Mixed" on each
-            { label: "5-7", min: 5, max: 7 },
-            { label: "8-10", min: 8, max: 10 },
-            { label: "11-12", min: 11, max: 12 },
-            { label: `All ${low}-12`, min: low, max: 12, isAll: true }
-        ];
-
-        ranges.forEach(range => {
+        mixedRanges(low).forEach(range => {
             const btn = document.createElement('button');
             btn.innerText = range.label;
             btn.className = 'mixed-btn';
@@ -727,6 +860,16 @@
     }
 
     // --- Step 4: Game Logic ---
+    // One fact: a = the level's number, b = the other number (Multiples of 10: 10, 20 … 120). The practice and the
+    // Teacher screen's answer key both use this, so the key always lists the facts a student is really asked.
+    function factOf(mode, a, b) {
+        if (mode === 'addition')       return { text: `${a} + ${b}`, answer: a + b };
+        if (mode === 'subtraction')    return { text: `${a + b} − ${a}`, answer: b };   // the inverse fact: (a + b) − a = b
+        if (mode === 'multiplication') return { text: `${a} × ${b}`, answer: a * b };
+        return { text: `${a * b} ÷ ${a}`, answer: b };                                // division: a × b ÷ a = b
+    }
+    const otherLow = k => k.tens ? 1 : 0;   // the other number starts at 0 (Multiples of 10: at 10)
+
     function generateQuestion() {
         // UNLOCK processing
         state.processing = false;
@@ -742,7 +885,7 @@
         // Multiples of 10: the other number is 10, 20 … 120 (numA is the base number); otherwise 0 … 12.
         // 📌 An assignment for part of the set (assign.js, 11/13): only lo … hi of it ("3 times 1-4").
         const part = assignPart();
-        const lowB = part ? part.lo : kind().tens ? 1 : 0, highB = part ? part.hi : 12;
+        const lowB = part ? part.lo : otherLow(kind()), highB = part ? part.hi : 12;
         const b = Math.floor(Math.random() * (highB - lowB + 1)) + lowB;
         const numB = kind().tens ? b * 10 : b;
 
@@ -752,21 +895,10 @@
             const [, a, sign, b] = FACT_RE.exec(pool[Math.floor(Math.random() * pool.length)]);
             state.answer = factAnswer(Number(a), sign, Number(b));
             ui.problem.textContent = `${a} ${sign} ${b} =`;
-        } else if (state.mode === 'addition') {
-            state.answer = numA + numB;
-            ui.problem.innerHTML = `${numA} + ${numB} =`;
-        } else if (state.mode === 'subtraction') {
-            // Subtraction is the inverse fact: (a + b) − a = b
-            const total = numA + numB;
-            state.answer = numB;
-            ui.problem.innerHTML = `${total} &minus; ${numA} =`;
-        } else if (state.mode === 'multiplication') {
-            state.answer = numA * numB;
-            ui.problem.innerHTML = `${numA} &times; ${numB} =`;
         } else {
-            const dividend = numA * numB;
-            state.answer = numB;
-            ui.problem.innerHTML = `${dividend} &div; ${numA} =`;
+            const fact = factOf(state.mode, numA, numB);
+            state.answer = fact.answer;
+            ui.problem.textContent = `${fact.text} =`;
         }
         state.problemText = ui.problem.textContent.replace(/\s*=\s*$/, '');
         if (state.answerStyle === 'choice') renderChoices();
@@ -1004,25 +1136,8 @@
     let studentName = '';
     let session = null; // { id, form, started, missed, answered, sent }
 
-    // ── Teacher Access (Marcos 10/19: "every site should have teacher access" ·
-    //    "teacher mode allows me to preview the site"). The Teacher PIN opens the site as Mr. O
-    //    with every level, and NOTHING is sent to the sheet. The sign-in is not kept, so a
-    //    reload, Exit or "Not you?" goes back to the sign-in screen.
+    // Mr. O on the roster: his student number is the Teacher PIN (the Teacher screen asks for it; see app below)
     const TEACHER_NAME = 'Mr. O (Teacher)';
-    let teacherPreview = false;
-
-    function promptTeacherReview() {
-        const pin = prompt('Enter Teacher PIN to preview the site:');
-        if (pin === null) return;
-        const teacher = ROSTER.find(s => s.name === TEACHER_NAME);
-        if (!teacher || pin.trim() !== teacher.id) { alert('Incorrect PIN.'); return; }
-        teacherPreview = true;
-        signIn(TEACHER_NAME);
-    }
-
-    function exitTeacherPreview() {
-        signOut();
-    }
 
     (function buildRoster() {
         const sel = document.getElementById('name-select');
@@ -1079,8 +1194,7 @@
 
     function signIn(name) {
         studentName = name;
-        if (!teacherPreview) { try { sessionStorage.setItem(LOGIN_KEY, name); } catch (e) {} }
-        document.getElementById('teacher-banner').classList.toggle('hidden', !teacherPreview);
+        try { sessionStorage.setItem(LOGIN_KEY, name); } catch (e) {}
         document.getElementById('student-name-display').textContent = name.includes(',')
             ? name.split(',')[1].trim() + ' ' + name.split(',')[0].trim()
             : name;
@@ -1090,7 +1204,13 @@
         assignCheck(name);   // an assignment from Mr. O shows first (assign.js)
     }
 
+    // A guest's ▶ Start (share.js names it 🎒 Start as a student guest): no name, no number, nothing saved
+    function guestStart() {
+        signIn('Guest');
+    }
+
     function signInFirst() {
+        if (window.SHARE_MODE) { document.getElementById('guest-start').focus(); return; }   // a guest: the start button
         const sel = document.getElementById('name-select');
         sel.focus();
         document.getElementById('login-error').textContent = '👆 Sign in first, then pick what to practice!';
@@ -1116,8 +1236,6 @@
 
     function signOut() {
         assignReset();
-        teacherPreview = false;   // Exit, "Not you?" and Sign Out all end the preview
-        document.getElementById('teacher-banner').classList.add('hidden');
         if (window.SHARE_MODE) { showScreen('welcome'); return; }   // a visitor never sees the name list
         studentName = '';
         try { sessionStorage.removeItem(LOGIN_KEY); } catch (e) {}
@@ -1262,7 +1380,7 @@
     }
 
     function factsSubmit(done) {
-        if (teacherPreview || !session || session.sent || !studentName) return;   // a preview sends nothing
+        if (!session || session.sent || !studentName) return;
         const correct = state.score.correct;
         const wrong   = state.score.wrong;
         if (correct + wrong === 0) return;
@@ -1297,19 +1415,202 @@
         if (!screens.practice.classList.contains('hidden')) factsSubmit(true);
     });
 
+    /* ═══════════════════════════════════════════════════
+       TEACHER SCREEN (11/14, as on the other class sites — Marcos: "teacher mode so they see all the options like
+       take test as student, answer key … without needing a pin code" on the teacher/admin guest link).
+       Teacher Access → the Teacher PIN, asked in the page → pick a kind, an operation and a level → 👀 Try it as a
+       student or ✅ Answer key. The PIN holds in this tab until ✕ Exit teacher. Nothing on it is saved or sent.
+       Before 11/14 the PIN (in a pop-up) signed Mr. O in with a Teacher Preview banner; Try it replaces that.
+    ═══════════════════════════════════════════════════ */
+    const TEACHER_KEY      = 'facts_teacher';        // sessionStorage: '1' = the Teacher PIN was given in this tab
+    const TEACHER_PICK_KEY = 'facts_teacher_pick';   // sessionStorage: the last pick, e.g. 'facts-review.multiplication.n7'
+    const TEACH_KINDS = ['facts-addsub', 'facts-review', 'facts-tens'];   // 🔁 Second Chance is only ever an assignment
+    // a Try-it link (?share=…&teach=<pick>): the guest view, started on that level
+    const TEACH = window.SHARE_MODE ? new URLSearchParams(location.search).get('teach') : null;
+
+    const teacherUnlocked = () => { try { return sessionStorage.getItem(TEACHER_KEY) === '1'; } catch (e) { return false; } };
+
+    /* Every level of a kind, in the level screen's order: the Mixed ones (m0 … m4), then each number (n2 … n12) */
+    function levelsOf(k) {
+        const mixed = mixedRanges(k.low).map((r, i) => ({ id: `m${i}`, min: r.min, max: r.max, name: r.isAll ? r.label : `Mixed ${r.label}`, label: r.label }));
+        const ones = [];
+        for (let n = k.low; n <= 12; n++) ones.push({ id: `n${n}`, min: n, max: n, name: `${n}s`, label: String(n) });
+        return [...mixed, ...ones];
+    }
+
+    /* 'facts-review.multiplication.n7' → { kind, mode, level } — or null if any part of it is not on the site */
+    function readPick(text) {
+        const [kindKey, mode, levelId] = String(text || '').split('.');
+        if (!TEACH_KINDS.includes(kindKey)) return null;
+        const k = KINDS[kindKey];
+        const level = levelsOf(k).find(l => l.id === levelId);
+        if (!k.ops.some(op => op.mode === mode) || !level) return null;
+        return { kind: kindKey, mode, level };
+    }
+    const pickText = p => `${p.kind}.${p.mode}.${p.level.id}`;
+    const factsIn = p => (p.level.max - p.level.min + 1) * (13 - otherLow(KINDS[p.kind]));
+    const pickName = p => `${KINDS[p.kind].title} · ${KINDS[p.kind].ops.find(op => op.mode === p.mode).word} · ${p.level.name}`;
+
+    let pinModalCallback = null;
+
+    const app = {
+        promptTeacherReview() {
+            if (teacherUnlocked()) { this.openTeacher(); return; }
+            this.showPinModal('🧑‍🏫 Teacher', 'Enter the Teacher PIN.', () => {
+                try { sessionStorage.setItem(TEACHER_KEY, '1'); } catch (e) {}
+                this.openTeacher();
+            });
+        },
+
+        _teacherPick() {
+            let saved = null;
+            try { saved = sessionStorage.getItem(TEACHER_PICK_KEY); } catch (e) {}
+            return readPick(saved) || readPick('facts-review.multiplication.m0');
+        },
+
+        openTeacher() {
+            document.getElementById('pin-modal').classList.add('hidden');
+            this._renderTeacher(this._teacherPick());
+            showScreen('teacher');
+        },
+
+        /* A tap on the Teacher screen: a new kind keeps the operation (first or second) and the level's place;
+           a number below the new kind's lowest becomes its lowest. */
+        teacherPick(what, value) {
+            const now = this._teacherPick();
+            let next = { ...now };
+            if (what === 'kind') {
+                const k = KINDS[value], opIndex = KINDS[now.kind].ops.findIndex(op => op.mode === now.mode);
+                const levels = levelsOf(k);
+                const n = now.level.id[0] === 'n' ? Math.max(Number(now.level.id.slice(1)), k.low) : null;
+                next = { kind: value, mode: k.ops[opIndex].mode, level: levels.find(l => l.id === (n === null ? now.level.id : `n${n}`)) };
+            } else if (what === 'mode') next = { ...now, mode: value };
+            else next = { ...now, level: levelsOf(KINDS[now.kind]).find(l => l.id === value) };
+            this._renderTeacher(next);
+        },
+
+        _renderTeacher(p) {
+            try { sessionStorage.setItem(TEACHER_PICK_KEY, pickText(p)); } catch (e) {}
+            const k = KINDS[p.kind];
+            const button = (what, value, label, on) =>
+                `<button type="button" class="t-pick${on ? ' on' : ''}" aria-pressed="${on}" onclick="app.teacherPick('${what}', '${value}')">${label}</button>`;
+            document.getElementById('t-kinds').innerHTML = TEACH_KINDS.map(key => button('kind', key, KINDS[key].title.replace('&', '&amp;'), key === p.kind)).join('');
+            document.getElementById('t-ops').innerHTML = k.ops.map(op => button('mode', op.mode, op.word, op.mode === p.mode)).join('');
+            const levels = levelsOf(k);
+            document.getElementById('t-mixed').innerHTML = levels.filter(l => l.id[0] === 'm').map(l => button('level', l.id, l.label, l.id === p.level.id)).join('');
+            document.getElementById('t-numbers').innerHTML = levels.filter(l => l.id[0] === 'n').map(l => button('level', l.id, l.label, l.id === p.level.id)).join('');
+            document.getElementById('t-picked').textContent = `${pickName(p)} · ${factsIn(p)} facts`;
+        },
+
+        /* 👀 Try it as a student: the guest view (share.js: nothing reaches the sheet, its own storage), on this level */
+        teacherTry() {
+            location.href = `${location.pathname}${window.SHARE_LINK}&teach=${encodeURIComponent(pickText(this._teacherPick()))}`;
+        },
+
+        /* ✅ Answer key: for each number of the level, every fact it can ask (factOf, the practice's own), with its answer */
+        teacherKey() {
+            const p = this._teacherPick(), k = KINDS[p.kind];
+            const charts = [];
+            for (let a = p.level.min; a <= p.level.max; a++) {
+                const rows = [];
+                for (let b = otherLow(k); b <= 12; b++) {
+                    const fact = factOf(p.mode, a, k.tens ? b * 10 : b);
+                    rows.push(`<tr><td>${fact.text}</td><td>=</td><td class="key-right">${fact.answer}</td></tr>`);
+                }
+                charts.push(`<div class="key-col"><h4>${a}s</h4><table class="key-facts"><tbody>${rows.join('')}</tbody></table></div>`);
+            }
+            document.getElementById('key-title').textContent = `✅ Answer key · ${pickName(p)}`;
+            // the printed page's title (🖨️ Print hides the bar above): what it is, which level, how many facts
+            document.getElementById('key-print-head').innerHTML =
+                `<h1>Mr. O's Math Fact Review — Answer Key</h1><p>${pickName(p).replace('&', '&amp;')} · ${factsIn(p)} facts</p>`;
+            document.getElementById('key-note').textContent =
+                `Every fact this level can ask, with its answer in green. The site picks from these at random, so a student may see one more than once.`;
+            document.getElementById('key-body').innerHTML = charts.join('');
+            showScreen('key');
+        },
+
+        printKey() {
+            document.body.classList.add('key-printing');
+            window.print();
+            document.body.classList.remove('key-printing');
+        },
+
+        backToTeacher() {
+            location.href = `${location.pathname}${window.SHARE_TEACHER ? window.SHARE_LINK : ''}#teacher`;   // a teacher/admin guest keeps the guest link
+        },
+
+        exitTeacher() {
+            try { sessionStorage.removeItem(TEACHER_KEY); } catch (e) {}
+            if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+            showScreen('login');   // the sign-in screen (a guest: the cover with its buttons)
+        },
+
+        /* A Try-it link: the guest, on the level picked — Type It or Multiple Choice next, as a student */
+        teachReady() {
+            const p = readPick(TEACH);
+            if (!p) return false;
+            signIn('Guest');
+            setKind(p.kind);
+            initSelection(p.mode);
+            pickSet(p.level.min, p.level.max);
+            document.getElementById('teach-what').textContent = `👀 Trying ${pickName(p)} as a student · nothing is saved`;
+            document.getElementById('teach-bar').classList.remove('hidden');
+            document.body.classList.add('teach-on');
+            return true;
+        },
+
+        /* ── the Teacher PIN, asked in the page ── */
+        showPinModal(title, msg, onSuccess) {
+            pinModalCallback = onSuccess;
+            document.getElementById('pin-modal-title').textContent = title;
+            document.getElementById('pin-modal-msg').textContent = msg;
+            document.getElementById('pin-modal-input').value = '';
+            document.getElementById('pin-modal-error').textContent = '';
+            document.getElementById('pin-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('pin-modal-input').focus(), 80);
+        },
+
+        confirmPinModal() {
+            const pin = document.getElementById('pin-modal-input').value.trim();
+            const teacher = ROSTER.find(s => s.name === TEACHER_NAME);
+            if (teacher && pin === teacher.id) {
+                document.getElementById('pin-modal').classList.add('hidden');
+                const cb = pinModalCallback;
+                pinModalCallback = null;
+                if (cb) cb();
+            } else {
+                document.getElementById('pin-modal-error').textContent = '❌ Incorrect PIN. Try again.';
+                document.getElementById('pin-modal-input').value = '';
+                document.getElementById('pin-modal-input').focus();
+            }
+        },
+
+        cancelPinModal() {
+            document.getElementById('pin-modal').classList.add('hidden');
+            pinModalCallback = null;
+        }
+    };
+
     // ── Start on the login screen unless this tab is already signed in ──
     (function initLogin() {
         let saved = '';
         try { saved = sessionStorage.getItem(LOGIN_KEY) || ''; } catch (e) {}
         const known = ROSTER.some(s => s.name === saved) || saved.endsWith(' (Guest)');
-        // Share mode (share.js): a colleague's link — no roster, no student number
+        // Share mode (share.js): a colleague's link — no roster, no student number. The sign-in screen is the cover:
+        // the guest's start button in place of the name list (share.js adds the teacher/admin button on that link).
         if (window.SHARE_MODE) {
-            signIn('Guest');
             document.querySelectorAll('[onclick="signOut()"]').forEach(el => { el.style.display = 'none'; });
+            document.querySelector('#login-screen .login-box').classList.add('hidden');
+            document.getElementById('guest-start').classList.remove('hidden');
+            if (!(TEACH && app.teachReady())) showScreen('login');
         }
+        else if (location.hash === '#teacher' && teacherUnlocked()) app.openTeacher();   // ← Teacher screen from a Try-it run
         else if (saved && known) signIn(saved);
         else showScreen('login');
     })();
+
+    // the teacher/admin guest link (share.js): 🧑‍🏫 Teacher / admin guest opens the Teacher screen with no PIN
+    if (window.SHARE_TEACHER) window.SHARE_OPEN_TEACHER = () => app.openTeacher();
 </script>
 
 </body>
