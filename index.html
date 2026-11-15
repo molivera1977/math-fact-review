@@ -447,7 +447,7 @@
         </div>
         <!-- The two guest links (share.js, Marcos 11/13): the guest's start button, in place of the name list.
              Students never see it. share.js names it, and on the teacher/admin link adds 🧑‍🏫 Teacher / admin guest. -->
-        <button type="button" id="guest-start" class="btn btn-home-large hidden" data-guest-start onclick="guestStart()">▶ Start</button>
+        <button type="button" id="guest-start" class="btn btn-home-large hidden" data-guest-try="Any level, start to score." data-guest-key="Every fact in a level, with its answer. Printable." data-guest-start onclick="guestStart()">▶ Start</button>
         <div class="login-box">
             <label for="name-select">👤 Select your name:</label>
             <select id="name-select" onchange="onNameSelect()">
@@ -635,7 +635,7 @@
     <button type="button" id="teach-back" onclick="app.backToTeacher()">← Teacher screen</button>
 </div>
 
-<script src="share.js?v=5"></script>
+<script src="share.js?v=6"></script>
 <script src="assign.js?v=11-teacher"></script>
 <script>
     // --- The three kinds of facts ---
