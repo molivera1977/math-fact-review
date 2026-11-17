@@ -195,6 +195,15 @@
         .mixed-btn:hover { transform: translateY(-2px); opacity: 0.9; }
         .mixed-all { background-color: var(--teal-color); grid-column: 1 / -1; font-size: 1.1rem; padding: 15px;}
 
+        /* Which facts of one number (11/17): All, two halves, three thirds — each button says its facts */
+        .part-grid { display: grid; gap: 15px; margin-bottom: 10px; }
+        .part-grid.two { grid-template-columns: repeat(2, 1fr); }
+        .part-grid.three { grid-template-columns: repeat(3, 1fr); }
+        .part-btn { background-color: var(--purple-color); color: white; border: none; border-radius: 12px; padding: 14px 8px;
+            font-size: 1.3rem; font-weight: bold; cursor: pointer; width: 100%; transition: transform 0.2s; }
+        .part-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .part-btn.part-all { background-color: var(--teal-color); margin-top: 10px; }
+
         .options-panel {
             background: #f8f9fa;
             border: 1px solid #eee;
@@ -335,6 +344,7 @@
             body { padding: 12px; }
             .container { padding: 1.6rem 1.1rem; }
             .mixed-grid { grid-template-columns: repeat(2, 1fr); }
+            .part-grid.three { grid-template-columns: 1fr; }
             .mode-container { flex-direction: column; align-items: center; gap: 14px; }
             .mode-card { box-sizing: border-box; width: 100%; max-width: 340px; height: auto; min-height: 84px; padding: 12px 16px;
                 display: grid; grid-template-columns: 96px 1fr; column-gap: 12px; align-items: center; align-content: center; text-align: left; }
@@ -533,6 +543,20 @@
         <button class="btn btn-nav" id="sel-back" onclick="showScreen('ops')">⬅️ Back<span class="btn-sub">Pick a different one. You stay signed in.</span></button>
     </div>
 
+    <!-- Which facts of one number (Marcos 11/17: "i want the kids to have this option" — the halves and thirds he
+         can assign; he picked All + halves + thirds). Built by showPartScreen. -->
+    <div id="part-screen" class="hidden">
+        <h2 id="part-title"></h2>
+        <p class="pick-prompt"><span class="say" id="part-say" role="button" tabindex="0" aria-label="Listen">🔊</span>Pick one:</p>
+        <button class="part-btn part-all" id="part-all"></button>
+        <h3 class="section-header"><span>Half of them</span></h3>
+        <div class="part-grid two" id="part-halves"></div>
+        <h3 class="section-header"><span>A few</span></h3>
+        <div class="part-grid three" id="part-thirds"></div>
+        <br>
+        <button class="btn btn-nav" onclick="showScreen('selection')">⬅️ Back<span class="btn-sub">Pick a different number.</span></button>
+    </div>
+
     <div id="style-screen" class="hidden">
         <h2 id="style-title">How do you want to answer?</h2>
         <div class="mode-container">
@@ -699,6 +723,7 @@
         welcome: document.getElementById('welcome-screen'),
         ops: document.getElementById('ops-screen'),
         selection: document.getElementById('selection-screen'),
+        part: document.getElementById('part-screen'),             // which facts of one number (11/17)
         style: document.getElementById('style-screen'),
         practice: document.getElementById('practice-screen'),
         assign: document.getElementById('assign-screen'),  // 📌 Mr. O's assignment (assign.js)
@@ -816,6 +841,7 @@
     function startPractice(min, max) {
         state.minFactor = min;
         state.maxFactor = max;
+        state.part = (!assignRun && pendingRange && pendingRange.part) || null;   // which facts they picked (11/17)
         state.score.correct = 0;
         state.score.wrong = 0;
         state.processing = false; 
@@ -843,7 +869,7 @@
         }
 
         ui.practiceTitle.innerText = kind().mix ? `🔁 Second Chance: ${factCount(state.facts.length)}`
-            : assignPart() ? `${modeTitle}: ${assignPartText(assignment)[0]}`   // 📌 part of a set: "3 × 1 to 3 × 6"
+            : partTitle() ? `${modeTitle}: ${partTitle()}`   // part of a set: "3 × 1 to 3 × 6"
             : `${modeTitle}: ${rangeTitle}` + (kind().tens ? ' (x10s)' : '');
 
         showScreen('practice');
@@ -884,7 +910,7 @@
         const numA = Math.floor(Math.random() * range) + state.minFactor;
         // Multiples of 10: the other number is 10, 20 … 120 (numA is the base number); otherwise 0 … 12.
         // 📌 An assignment for part of the set (assign.js, 11/13): only lo … hi of it ("3 times 1-4").
-        const part = assignPart();
+        const part = assignPart() || state.part;   // …or the facts they picked (11/17)
         const lowB = part ? part.lo : otherLow(kind()), highB = part ? part.hi : 12;
         const b = Math.floor(Math.random() * (highB - lowB + 1)) + lowB;
         const numB = kind().tens ? b * 10 : b;
@@ -1009,7 +1035,8 @@
         if (kind().mix) {
             label = factCount(state.facts.length);
         } else if (state.minFactor === state.maxFactor) {
-            label = `${state.minFactor}s`;
+            const part = assignPart() || state.part;
+            label = `${state.minFactor}s` + (part ? ` (${part.lo}–${part.hi})` : '');
         } else if (state.minFactor === kind().low && state.maxFactor === 12) {
             label = `All (${kind().low}-12)`;
         } else {
@@ -1255,7 +1282,7 @@
         else if (state.minFactor === state.maxFactor) set = `${state.minFactor}s`;
         else if (state.minFactor === low && state.maxFactor === 12) set = `All ${low}-12`;
         else set = `Mixed ${state.minFactor}-${state.maxFactor}`;
-        const part = assignPart();   // 📌 part of a set: 'Mult · 3s · 1-6 · Assigned'
+        const part = assignPart() || state.part;   // part of a set: 'Mult · 3s · 1-6 · Assigned' / 'Mult · 7s · 9-12 · Choice'
         return `${op} · ${set}` + (part ? ` · ${part.lo}-${part.hi}` : '') + (state.timer.active ? ' · Timed' : '') + (state.answerStyle === 'choice' ? ' · Choice' : '') + (assignRun ? ' · Assigned' : '');
     }
 
@@ -1263,10 +1290,48 @@
     // --- Answer style: type it or multiple choice ---
     let pendingRange = null;
 
-    function pickSet(min, max) {
-        pendingRange = { min, max };
+    function pickSet(min, max, wholeSet = false) {
+        pendingRange = { min, max, part: null };
+        if (min === max && !wholeSet && !assignRun && !kind().mix) { showPartScreen(min); return; }   // one number: which of its facts
         showScreen('style');
     }
+
+    // ── Which facts of one number (Marcos 11/17: "i want the kids to have this option", All + halves + thirds) ──
+    // Each button says its facts the way an assignment's banner does ("7 × 9 to 7 × 12"); never "half" or "third".
+    const FREE_PARTS = { halves: [[1, 6], [7, 12]], thirds: [[1, 4], [5, 8], [9, 12]] };
+    function freePartText(n, part) {
+        const op = Object.keys(ASSIGN_SITES[state.kind].ops).find(k => ASSIGN_SITES[state.kind].ops[k] === state.mode);
+        return assignPartText({ site: state.kind, op, min: n, max: n, base: `${n}s`, part });
+    }
+    function showPartScreen(n) {
+        const tens = kind().tens ? ' (x10s)' : '';
+        document.getElementById('part-title').innerText = `Which ${n}s facts?${tens}`;
+        document.getElementById('part-say').dataset.say = `Which ${n}s facts? Pick one. All of them, half of them, or just a few.`;
+        const all = document.getElementById('part-all');
+        all.innerHTML = `All ${n}s<span class="btn-sub">${freePartText(n, { lo: otherLow(kind()), hi: 12 })[0]}</span>`;
+        all.onclick = () => pickPart(null);
+        const fill = (id, list) => {
+            const grid = document.getElementById(id);
+            grid.innerHTML = '';
+            list.forEach(([lo, hi]) => {
+                const btn = document.createElement('button');
+                btn.className = 'part-btn';
+                btn.innerText = freePartText(n, { lo, hi })[0];
+                btn.onclick = () => pickPart({ lo, hi });
+                grid.appendChild(btn);
+            });
+        };
+        fill('part-halves', FREE_PARTS.halves);
+        fill('part-thirds', FREE_PARTS.thirds);
+        showScreen('part');
+    }
+    function pickPart(part) {
+        pendingRange = { ...pendingRange, part };
+        showScreen('style');
+    }
+    // The part being practiced, as the student sees it: an assignment's, or the one they picked ('' = the whole set)
+    const partTitle = () => assignPart() ? assignPartText(assignment)[0]
+        : state.part ? freePartText(state.minFactor, state.part)[0] : '';
 
     function chooseAnswerStyle(style) {
         state.answerStyle = style;
@@ -1552,7 +1617,7 @@
             signIn('Guest');
             setKind(p.kind);
             initSelection(p.mode);
-            pickSet(p.level.min, p.level.max);
+            pickSet(p.level.min, p.level.max, true);   // the teacher picked the level: all of it (no Which-facts screen)
             document.getElementById('teach-what').textContent = `👀 Trying ${pickName(p)} as a student · nothing is saved`;
             document.getElementById('teach-bar').classList.remove('hidden');
             document.body.classList.add('teach-on');
