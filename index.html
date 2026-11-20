@@ -1405,6 +1405,7 @@
             started,
             missed: [],
             tally: {},                                 // every fact answered: { '7 × 8': [right, wrong] }
+            log: [],                                   // 📍 Right Now (11/20): each answer in order, the last 200
             answered: 0,
             sent: false,
             activeMs: 0,                               // time on the page only
@@ -1441,7 +1442,11 @@
             const entry = `${state.problemText} (${typed})`;
             if (!session.missed.includes(entry)) session.missed.push(entry);
         }
-        if (session.answered % PARTIAL_EVERY === 0) factsSubmit(false);
+        // 📍 Right Now on the dashboard (Marcos 11/20: "Yes, those three"): each answer in order, so the teacher sees a
+        // ✓ / ✗ box per fact (its latest answer). A row still goes every 5th answer — a row per fact would swamp the
+        // sheet at fact time (11/18: 71 runs at once) — plus one at the 1st answer, so a student shows up right away.
+        session.log = [...(session.log || []), { e: 'answer', id: state.problemText, ok: !!isCorrect, at: new Date().toISOString() }].slice(-200);
+        if (session.answered === 1 || session.answered % PARTIAL_EVERY === 0) factsSubmit(false);
     }
 
     function factsSubmit(done) {
@@ -1470,7 +1475,7 @@
                 wrongQuestions: session.missed.join(' | '),
                 // every fact answered, right and wrong (Marcos 10/27: "yes, track the right ones too") — the sheet's
                 // events column; the dashboard's 🔁 Second Chance drops a fact a student has since gotten right
-                events:         JSON.stringify({ v: 1, facts: session.tally })
+                events:         JSON.stringify({ v: 1, facts: session.tally, log: session.log || [] })
             })
         }).catch(() => {});
     }
